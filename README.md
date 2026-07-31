@@ -1,4 +1,4 @@
-# Auraline
+# Seizure66
 
 An epilepsy awareness site with a private, encrypted place for people to keep
 the information that matters when they cannot explain it themselves.
