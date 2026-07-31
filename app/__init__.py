@@ -87,6 +87,16 @@ def create_app(config_object: type[Config] = Config) -> Flask:
                 exc_info=True,
             )
 
+        try:
+            from .schema_guard import ensure_columns
+
+            ensure_columns(app, db)
+        except Exception:
+            # Never let a schema-guard problem take the whole app down --
+            # worst case, whatever it would have fixed still needs a human,
+            # exactly as it did before this existed.
+            app.logger.error("schema_guard.ensure_columns() failed.", exc_info=True)
+
     if not app.debug:
         logging.basicConfig(level=logging.INFO)
 
