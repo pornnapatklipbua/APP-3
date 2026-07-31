@@ -1,0 +1,70 @@
+# Render Blueprint. Push this repo, then in Render choose
+# "New +" -> "Blueprint" and point it at the repository.
+databases:
+  # `name` is the Render resource. `databaseName` and `user` are the PostgreSQL
+  # database and role inside it. The web service below must stay in the SAME
+  # region, or `connectionString` cannot resolve on the internal network.
+  - name: auraline-db
+    databaseName: auraline
+    user: auraline
+    plan: free
+    region: singapore
+
+services:
+  - type: web
+    name: auraline
+    runtime: python
+    plan: free
+    # Must match the database's region above. Change both together.
+    region: singapore
+    buildCommand: pip install -r requirements.txt
+    # No --bind needed: gunicorn binds 0.0.0.0:$PORT automatically when PORT is
+    # set, which Render always does. Argon2id allocates ARGON2_MEMORY_KIB per
+    # concurrent hash, so concurrency stays modest to fit the free tier's 512 MB.
+    startCommand: gunicorn wsgi:app --workers 2 --threads 2 --timeout 60
+    healthCheckPath: /
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.7"
+
+      - key: FLASK_ENV
+        value: production
+
+      # Signs session cookies. Generated once by Render, then left alone --
+      # changing it signs everybody out.
+      - key: SECRET_KEY
+        generateValue: true
+
+      - key: DATABASE_URL
+        fromDatabase:
+          name: auraline-db
+          property: connectionString
+
+      # MUST be set by hand in the Render dashboard. See README.
+      # Losing this key means every stored record becomes unreadable.
+      - key: FIELD_ENCRYPTION_KEYS
+        sync: false
+
+      # Also set by hand. Never change it once accounts exist -- every username
+      # lookup value changes with it and nobody can sign in.
+      - key: BLIND_INDEX_KEY
+        sync: false
+
+      # Comma-separated emails allowed to read /admin/tag-requests.
+      - key: ADMIN_EMAILS
+        sync: false
+
+      # Where tag requests are emailed. Optional -- without these, requests are
+      # still stored and readable at /admin/tag-requests.
+      - key: CONTACT_EMAIL
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        sync: false
+      - key: SMTP_USERNAME
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: SMTP_FROM
+        sync: false

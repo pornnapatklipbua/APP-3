@@ -1,0 +1,14 @@
+.env
+PRODUCTION_KEYS.txt
+*.db
+local.db
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+.idea/
+.vscode/
+.DS_Store
+instance/
+*.log

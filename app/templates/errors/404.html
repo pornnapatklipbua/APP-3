@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Page not found - Auraline{% endblock %}
+
+{% block content %}
+<section class="section">
+  <div class="wrap wrap--narrow">
+    <p class="eyebrow">404</p>
+    <h1>That page is not here.</h1>
+    <p class="lede">The link may be out of date, or the address may have a typo in it.</p>
+    <div class="btn-row mt-lg">
+      <a class="btn btn--primary" href="{{ url_for('main.index') }}">Back to the start</a>
+      <a class="btn btn--ghost" href="{{ url_for('main.first_aid') }}">Seizure first aid</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

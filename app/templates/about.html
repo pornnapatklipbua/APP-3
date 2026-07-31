@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}About epilepsy - Auraline{% endblock %}
+{% block description %}What epilepsy is, what seizures actually look like, and what people with epilepsy wish everyone else understood.{% endblock %}
+
+{% block content %}
+<section class="section">
+  <div class="wrap wrap--narrow">
+    <p class="eyebrow">About epilepsy</p>
+    <h1>A condition most people have heard of, and few people recognise.</h1>
+    <p class="lede">
+      Epilepsy is a neurological condition in which a person has a lasting
+      tendency to have seizures - brief bursts of unusual electrical activity in
+      the brain. It is usually diagnosed after two or more seizures that had no
+      obvious immediate cause.
+    </p>
+
+    <hr>
+
+    <h2>It is common, and it is not one thing</h2>
+    <p>
+      Around 50 million people worldwide have epilepsy. It can begin at any age,
+      and in around half of cases no cause is ever identified. In others it
+      follows a head injury, a stroke, an infection, a tumour, or a genetic
+      difference in how the brain develops.
+    </p>
+    <p>
+      There are more than forty recognised seizure types. Two people with the
+      same diagnosis can have entirely different experiences, which is why
+      general advice only goes so far - and why a person's own account of their
+      seizures is worth more than any leaflet.
+    </p>
+
+    <h2>What seizures can look like</h2>
+    <p>
+      Seizures are broadly grouped by where in the brain they start.
+    </p>
+
+    <div class="grid mt-md">
+      <div class="card stack">
+        <h3>Focal seizures</h3>
+        <p class="muted">
+          Start in one area of the brain. The person may stay fully aware, or
+          may lose awareness while still appearing awake. Signs include staring,
+          lip-smacking, fumbling with clothing, repeating a phrase, sudden fear
+          or déjà vu, an unusual smell or taste, or a rising sensation in the
+          stomach.
+        </p>
+      </div>
+      <div class="card stack">
+        <h3>Absence seizures</h3>
+        <p class="muted">
+          A pause of a few seconds. The person stops, stares, and does not
+          respond, then carries on with no memory of the gap. In children these
+          are frequently mistaken for daydreaming or inattention for years
+          before anyone recognises them.
+        </p>
+      </div>
+      <div class="card stack">
+        <h3>Tonic-clonic seizures</h3>
+        <p class="muted">
+          The kind most people picture. The body stiffens, the person falls,
+          and the limbs jerk rhythmically. Breathing may become laboured and
+          the lips may look blue. It usually stops on its own within a couple
+          of minutes.
+        </p>
+      </div>
+      <div class="card stack">
+        <h3>Myoclonic, tonic and atonic</h3>
+        <p class="muted">
+          Sudden jerks, sudden stiffening, or a sudden loss of muscle tone
+          that causes a fall without warning. Atonic seizures in particular
+          carry a high risk of head injury.
+        </p>
+      </div>
+    </div>
+
+    <h2 class="mt-lg">Photosensitivity</h2>
+    <p>
+      Between three and five in every hundred people with epilepsy are
+      photosensitive: flashing lights, strobing, and some high-contrast moving
+      patterns can trigger a seizure. It is more common in children and young
+      people, and it is far rarer than the public assumes - most people with
+      epilepsy are not affected by light at all.
+    </p>
+    <div class="note">
+      This site is built with that minority in mind. There is no flashing
+      content anywhere on Auraline, no autoplaying video, no strobing imagery,
+      and no rapid transitions. If your device is set to reduce motion, the few
+      remaining transitions are switched off entirely.
+    </div>
+
+    <h2 class="mt-lg">Treatment</h2>
+    <p>
+      Around seven in ten people with epilepsy could become seizure-free with
+      appropriate anti-seizure medication. That figure hides a serious gap:
+      roughly three quarters of people with epilepsy in low-income countries
+      never receive the treatment they need. For those whose seizures do not
+      respond to medication, options can include surgery, nerve stimulation
+      devices, or dietary therapy.
+    </p>
+
+    <h2>What people with epilepsy tend to ask for</h2>
+    <ul class="ticks mt-md">
+      <li>Learn what to do, so nobody has to improvise around you.</li>
+      <li>Do not call an ambulance reflexively - for many people a seizure is routine, and an unnecessary hospital trip is expensive and exhausting.</li>
+      <li>Do not treat a seizure as a spectacle. Clearing onlookers is a kindness.</li>
+      <li>Understand that confusion and exhaustion afterwards can last hours.</li>
+      <li>Ask what helps. Most people know exactly what they need.</li>
+    </ul>
+
+    <div class="note note--amber mt-lg">
+      <strong>This page is general information, not medical advice.</strong>
+      Epilepsy varies enormously between individuals. For guidance about your
+      own situation, or that of someone you care for, speak to a doctor or a
+      specialist epilepsy nurse.
+    </div>
+
+    <div class="btn-row mt-lg">
+      <a class="btn btn--primary" href="{{ url_for('main.first_aid') }}">Seizure first aid</a>
+      <a class="btn btn--ghost" href="{{ url_for('main.request_tag') }}">Request a tag</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

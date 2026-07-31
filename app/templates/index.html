@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% block title %}Auraline - epilepsy awareness, and a record that speaks for you{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <div class="wrap hero__inner">
+    <p class="eyebrow">Epilepsy awareness</p>
+    <h1>When you cannot speak for yourself, your information can.</h1>
+    <p class="hero__lede">
+      One in twenty-six people will develop epilepsy. Most of us would not know
+      what to do if it happened in front of us. Auraline exists to change that -
+      and to give people with epilepsy somewhere private to keep the details that
+      matter in the moments they cannot explain them.
+    </p>
+    <div class="btn-row">
+      <a class="btn btn--primary" href="{{ url_for('main.first_aid') }}">Learn seizure first aid</a>
+      <a class="btn btn--ghost" href="{{ url_for('records.my_information') }}">Keep my information</a>
+    </div>
+  </div>
+</section>
+
+<section class="section section--sunken">
+  <div class="wrap">
+    <div class="stats">
+      <div class="stat">
+        <p class="stat__figure">50 million</p>
+        <p class="stat__body">People live with epilepsy worldwide, making it one of the most common serious neurological conditions.</p>
+      </div>
+      <div class="stat">
+        <p class="stat__figure">1 in 26</p>
+        <p class="stat__body">People will develop epilepsy at some point in their lifetime. It can begin at any age.</p>
+      </div>
+      <div class="stat">
+        <p class="stat__figure">70%</p>
+        <p class="stat__body">Could live seizure-free with the right treatment - yet a large share of people never receive it.</p>
+      </div>
+      <div class="stat">
+        <p class="stat__figure">3-5%</p>
+        <p class="stat__body">Of people with epilepsy are photosensitive. Flashing images can trigger a seizure, which is why nothing here flashes.</p>
+      </div>
+    </div>
+    <p class="faint mt-lg">
+      Figures from the World Health Organization and national epilepsy charities.
+      See <a href="{{ url_for('main.about') }}">About epilepsy</a> for context.
+    </p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <div class="grid">
+      <div>
+        <p class="eyebrow">The misunderstanding</p>
+        <h2>Most seizures do not look like the ones on television.</h2>
+      </div>
+      <div class="stack">
+        <p>
+          When people picture a seizure they picture someone falling and
+          convulsing. That is one kind - a tonic-clonic seizure - and it is not
+          the most common one.
+        </p>
+        <p>
+          A seizure can be a person standing still, staring past you, not
+          answering. It can be someone plucking at their clothes, repeating a
+          word, or walking somewhere with no idea why. It can be a wave of
+          nausea, a smell that is not there, or a few seconds that are simply
+          missing afterwards.
+        </p>
+        <p>
+          People having these seizures are regularly assumed to be drunk, rude,
+          or being difficult. Recognising what is actually happening is the
+          single most useful thing a bystander can do.
+        </p>
+        <p><a href="{{ url_for('main.about') }}">Read more about epilepsy and seizure types</a></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section section--sunken">
+  <div class="wrap">
+    <p class="eyebrow">If it happens in front of you</p>
+    <h2>Stay. Safe. Side.</h2>
+    <p class="lede">Three words worth remembering. They cover most of what a bystander needs to do.</p>
+
+    <div class="grid mt-lg">
+      <div class="card">
+        <h3>Stay</h3>
+        <p class="muted">Stay with them and start timing the seizure. Keep calm, and keep onlookers back.</p>
+      </div>
+      <div class="card">
+        <h3>Safe</h3>
+        <p class="muted">Move hard or sharp objects away. Cushion their head. Do not restrain them, and never put anything in their mouth.</p>
+      </div>
+      <div class="card">
+        <h3>Side</h3>
+        <p class="muted">Once the movements stop, turn them gently onto their side to keep their airway clear. Stay until they are fully alert.</p>
+      </div>
+    </div>
+
+    <div class="note note--rose mt-lg">
+      <strong>Call an ambulance</strong> if the seizure lasts longer than five minutes,
+      if another follows immediately, if the person is injured, is in water, is
+      pregnant, does not regain consciousness, or if it is their first seizure.
+    </div>
+
+    <p class="mt-lg"><a class="btn btn--ghost" href="{{ url_for('main.first_aid') }}">Full seizure first aid guide</a></p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <div class="grid">
+      <div class="panel stack">
+        <p class="eyebrow">Request a tag</p>
+        <h3>A tag answers the question you cannot.</h3>
+        <p class="muted">
+          A bracelet, necklace or wallet card tells a stranger or a paramedic
+          that you have epilepsy, what medication you take, and who to call -
+          in the window where you are not able to tell them yourself.
+        </p>
+        <p><a class="btn btn--primary" href="{{ url_for('main.request_tag') }}">Request an epilepsy tag</a></p>
+      </div>
+
+      <div class="panel stack">
+        <p class="eyebrow">Your private record</p>
+        <h3>Written once, when you are well.</h3>
+        <p class="muted">
+          Create an account and record your seizure types, triggers, warning
+          signs, medication and emergency contacts. Everything is encrypted, and
+          only you can read it back.
+        </p>
+        <p>
+          {% if current_user %}
+            <a class="btn btn--primary" href="{{ url_for('records.my_information') }}">Open my information</a>
+          {% else %}
+            <a class="btn btn--primary" href="{{ url_for('auth.register') }}">Create an account</a>
+          {% endif %}
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

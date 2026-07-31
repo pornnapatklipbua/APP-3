@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% block title %}My emergency tag - Auraline{% endblock %}
+
+{% block content %}
+<section class="section">
+  <div class="wrap wrap--narrow">
+    <p class="eyebrow">Emergency tag</p>
+    <h1>The link that speaks for you.</h1>
+    <p class="lede">
+      Write this link to an NFC tag, or print the QR code. Anyone who scans it
+      sees your emergency information straight away, without signing in &mdash;
+      which is the point, and the reason the link itself has to stay private.
+    </p>
+
+    {% if not card %}
+      <div class="empty-state mt-lg">
+        <h2>No tag link yet</h2>
+        <p>
+          Creating one generates a private web address unique to you. Nobody can
+          find it by guessing, and it is never listed anywhere.
+        </p>
+        <form method="post" action="{{ url_for('records.emergency_create') }}" class="mt-md">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn btn--primary">Create my emergency link</button>
+        </form>
+      </div>
+
+    {% else %}
+      {% if not profile or profile.is_empty() %}
+        <div class="note note--amber mt-md">
+          <strong>Your record is empty.</strong> Someone scanning your tag right
+          now would get general seizure first aid and nothing about you.
+          <a href="{{ url_for('records.edit') }}">Write your information down</a> first.
+        </div>
+      {% endif %}
+
+      <div class="panel mt-lg stack">
+        <p class="status status--{{ 'live' if card.is_active else 'off' }}">
+          {{ 'Tag is live' if card.is_active else 'Tag is switched off' }}
+        </p>
+
+        <div>
+          <h3>Write this to your tag</h3>
+          <code class="tag-url">{{ card_url }}</code>
+        </div>
+
+        <div class="qr-block">
+          <img src="{{ url_for('records.emergency_qr') }}" alt="QR code linking to your emergency information" width="168" height="168">
+          <div class="qr-block__body">
+            <h3>Or print the QR code</h3>
+            <p class="muted">
+              Not every phone reads NFC, and a locked handset sometimes will not.
+              A QR code on a wallet card next to the tag costs nothing and works
+              anywhere a camera does.
+            </p>
+            <p><a href="{{ url_for('emergency.card', token=card.token) }}" target="_blank" rel="noopener noreferrer">See exactly what a scanner sees</a></p>
+          </div>
+        </div>
+      </div>
+
+      <div class="note mt-md">
+        <strong>Treat this link like a key.</strong> Anyone who has it can read
+        your emergency information without a password &mdash; that is what makes
+        it work when you cannot type one. Do not post it publicly. If a tag is
+        lost, issue a new link below.
+      </div>
+
+      <h2 class="mt-lg">Writing it to an NFC tag</h2>
+      <ol class="steps mt-md">
+        <li>
+          <h3>Get a writable tag</h3>
+          <p class="muted">Any NTAG213 or NTAG215 sticker, wristband or card will do. They cost very little and hold far more than this link needs.</p>
+        </li>
+        <li>
+          <h3>Install a tag writer</h3>
+          <p class="muted">NFC Tools works on both Android and iPhone. Any app that writes a URL record is fine.</p>
+        </li>
+        <li>
+          <h3>Write the link as a URL record</h3>
+          <p class="muted">Choose "Write", then "URL", then paste the address above. Hold the tag against the back of your phone until it confirms.</p>
+        </li>
+        <li>
+          <h3>Test it before you rely on it</h3>
+          <p class="muted">Scan it with a different phone, ideally one that is not signed in here, and check it shows what you expect.</p>
+        </li>
+        <li>
+          <h3>Consider locking the tag</h3>
+          <p class="muted">Most writers can make a tag read-only. That stops anyone overwriting your link, but it cannot be undone &mdash; do it only once you are sure.</p>
+        </li>
+      </ol>
+
+      <h2 class="mt-lg">Who has opened it</h2>
+      {% if card.accesses %}
+        <p class="muted">
+          The {{ card.accesses|length }} most recent view{{ '' if card.accesses|length == 1 else 's' }}.
+          We record when your card was opened, but not who by &mdash; the viewer's
+          address is stored only as a one-way hash, so repeat visitors can be told
+          apart without us keeping a list of the people who helped you.
+        </p>
+        <ul class="access-log mt-md">
+          {% for access in card.accesses[:15] %}
+            <li>
+              <span>{{ access.accessed_at.strftime('%d %B %Y') }}</span>
+              <span class="faint">{{ access.accessed_at.strftime('%H:%M UTC') }}</span>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="muted">Nobody has opened your card yet.</p>
+      {% endif %}
+
+      <hr>
+
+      <div class="form-actions">
+        <form method="post" action="{{ url_for('records.emergency_toggle') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn btn--ghost">
+            {{ 'Switch the tag off' if card.is_active else 'Switch the tag back on' }}
+          </button>
+        </form>
+
+        <form method="post" action="{{ url_for('records.emergency_regenerate') }}" class="spacer"
+              data-confirm="Issue a new link? Every tag and card you have already made will stop working until you write the new link to them.">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn btn--danger">Issue a new link</button>
+        </form>
+      </div>
+
+      <p class="faint mt-md">
+        Switching off is instant and reversible &mdash; scanning shows nothing while
+        it is off. Issuing a new link permanently retires the old one, so any tag
+        already written has to be written again.
+      </p>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

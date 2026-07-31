@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Tag requests - Auraline{% endblock %}
+
+{% block content %}
+<section class="section">
+  <div class="wrap">
+    <p class="eyebrow">Host only</p>
+    <h1>Tag requests</h1>
+    <p class="lede">{{ requests|length }} most recent request{{ '' if requests|length == 1 else 's' }}.</p>
+
+    {% if not requests %}
+      <div class="empty-state mt-lg">
+        <h2>Nothing yet</h2>
+        <p>Requests submitted through the site will appear here.</p>
+      </div>
+    {% else %}
+      <div class="table-scroll mt-lg">
+        <table class="data">
+          <thead>
+            <tr>
+              <th scope="col">#</th>
+              <th scope="col">Received</th>
+              <th scope="col">Person</th>
+              <th scope="col">Address</th>
+              <th scope="col">Tag</th>
+              <th scope="col">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in requests %}
+              <tr>
+                <td>{{ r.id }}</td>
+                <td>{{ r.created_at.strftime('%d %b %Y') }}<br><span class="faint">{{ r.created_at.strftime('%H:%M UTC') }}</span></td>
+                <td>
+                  <strong>{{ r.full_name or '-' }}</strong><br>
+                  {% if r.email %}<a href="mailto:{{ r.email }}">{{ r.email }}</a><br>{% endif %}
+                  {% if r.phone %}<span class="faint">{{ r.phone }}</span>{% endif %}
+                </td>
+                <td>{{ r.postal_address or '-' }}</td>
+                <td>
+                  {{ r.tag_style or 'No preference' }}
+                  {% if r.engraving %}<br><span class="faint">{{ r.engraving }}</span>{% endif %}
+                  {% if r.message %}<br><span class="faint">{{ r.message }}</span>{% endif %}
+                </td>
+                <td>
+                  <span class="pill pill--{{ r.status }}">{{ r.status }}</span>
+                  <form method="post" action="{{ url_for('main.admin_update_status', request_id=r.id) }}" class="mt-sm">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <select name="status" aria-label="Status for request {{ r.id }}">
+                      {% for option in ['new', 'in-progress', 'sent', 'closed'] %}
+                        <option value="{{ option }}" {% if r.status == option %}selected{% endif %}>{{ option }}</option>
+                      {% endfor %}
+                    </select>
+                    <button type="submit" class="btn btn--quiet">Update</button>
+                  </form>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

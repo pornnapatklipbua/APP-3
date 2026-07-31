@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Emergency information{% if profile and profile.full_name %} - {{ profile.full_name }}{% endif %}</title>
+  {# Belt and braces alongside the X-Robots-Tag header and robots.txt. #}
+  <meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
+  <meta name="referrer" content="no-referrer">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="icon" href="{{ url_for('static', filename='img/favicon.svg') }}" type="image/svg+xml">
+</head>
+<body class="ec-body">
+
+<main class="ec">
+  <header class="ec__head">
+    <p class="ec__flag">Epilepsy &mdash; emergency information</p>
+    {% if profile and profile.full_name %}
+      <h1>{{ profile.full_name }}</h1>
+    {% else %}
+      <h1>This person has epilepsy</h1>
+    {% endif %}
+    {% if profile and profile.date_of_birth %}
+      <p class="ec__dob">Date of birth: {{ profile.date_of_birth }}</p>
+    {% endif %}
+  </header>
+
+  {% if not sections %}
+    <div class="ec__section">
+      <div class="ec__row">
+        <p class="ec__value">
+          This person has registered an emergency tag but has not written down
+          their information yet. Treat as you would anyone having a seizure:
+          time it, protect their head, do not restrain them, and turn them onto
+          their side once the movements stop. Call an ambulance if the seizure
+          passes five minutes or a second one follows.
+        </p>
+      </div>
+    </div>
+  {% else %}
+    {% for heading, rows in sections %}
+      <section class="ec__section {% if loop.first %}ec__section--urgent{% endif %}">
+        <h2>{{ heading }}</h2>
+        {% for label, value in rows %}
+          <div class="ec__row">
+            <p class="ec__label">{{ label }}</p>
+            <p class="ec__value">{{ value | phones }}</p>
+          </div>
+        {% endfor %}
+      </section>
+    {% endfor %}
+  {% endif %}
+
+  <footer class="ec__foot">
+    <p>
+      Shown because this person's tag was scanned. They wrote this themselves;
+      it is not a clinical record and may be out of date.
+    </p>
+    <p class="ec__emergency">In an emergency, call your local emergency number.</p>
+  </footer>
+</main>
+
+</body>
+</html>

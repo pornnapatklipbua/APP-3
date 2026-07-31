@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Create an account - Auraline{% endblock %}
+
+{% block content %}
+<section class="wrap signin">
+  <div class="signin__head">
+    <p class="eyebrow">Create an account</p>
+    <h1>Somewhere private to keep it.</h1>
+    <p class="muted">Your information is encrypted, and visible to you alone.</p>
+  </div>
+
+  <form method="post" class="panel" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="field">
+      <label for="username">Username</label>
+      <span class="field__hint" id="username-hint">
+        3 to 32 characters. Letters, numbers, dots, hyphens and underscores.
+      </span>
+      <input type="text" id="username" name="username" maxlength="32" required
+             aria-describedby="username-hint" autocomplete="username"
+             autocapitalize="none" autocorrect="off" value="{{ form.username or '' }}" autofocus>
+    </div>
+
+    <div class="field">
+      <label for="email">Email address</label>
+      <span class="field__hint" id="email-hint">
+        Used only to reset your password. Without it, a forgotten password means
+        losing access to everything you have stored.
+      </span>
+      <input type="email" id="email" name="email" maxlength="320" required
+             aria-describedby="email-hint" autocomplete="email"
+             value="{{ form.email or '' }}">
+    </div>
+
+    <div class="field">
+      <label for="password">Password</label>
+      <span class="field__hint" id="password-hint">
+        At least {{ min_length }} characters. Three or four unrelated words make
+        a password that is both easier to remember and harder to break than a
+        short jumble of symbols.
+      </span>
+      <input type="password" id="password" name="password" required
+             minlength="{{ min_length }}" maxlength="{{ max_length }}"
+             aria-describedby="password-hint" autocomplete="new-password">
+    </div>
+
+    <div class="field">
+      <label for="password_confirm">Repeat password</label>
+      <input type="password" id="password_confirm" name="password_confirm" required
+             maxlength="{{ max_length }}" autocomplete="new-password">
+    </div>
+
+    <div class="honeypot" aria-hidden="true">
+      <label for="website">Leave this field empty</label>
+      <input type="text" id="website" name="website" tabindex="-1" autocomplete="off">
+    </div>
+
+    <button type="submit" class="btn btn--primary btn--block">Create my account</button>
+  </form>
+
+  <p class="alt-action">
+    Already have an account? <a href="{{ url_for('auth.login') }}">Sign in</a>.
+  </p>
+
+  <p class="faint mt-md">
+    We store your username, email address and a one-way hash of your password -
+    never the password itself. See the
+    <a href="{{ url_for('main.privacy') }}">privacy page</a> for the detail.
+  </p>
+</section>
+{% endblock %}

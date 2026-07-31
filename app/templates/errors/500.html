@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Something went wrong - Auraline{% endblock %}
+
+{% block content %}
+<section class="section">
+  <div class="wrap wrap--narrow">
+    <p class="eyebrow">500</p>
+    <h1>Something went wrong at our end.</h1>
+    <p class="lede">
+      Nothing you had already saved has been lost. Please try again in a moment.
+    </p>
+    <p class="mt-lg"><a class="btn btn--primary" href="{{ url_for('main.index') }}">Back to the start</a></p>
+  </div>
+</section>
+{% endblock %}

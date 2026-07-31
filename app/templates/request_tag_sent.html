@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Request received - Auraline{% endblock %}
+
+{% block content %}
+<section class="section">
+  <div class="wrap wrap--narrow">
+    <p class="eyebrow">Request received</p>
+    <h1>Thank you - we have it.</h1>
+    <p class="lede">
+      Your request has been recorded and sent to us. We read every one ourselves
+      and will reply by email, usually within a few days. If you gave us an
+      address, that is where the tag will go once the details are settled.
+    </p>
+
+    <div class="note mt-md">
+      Nothing arrives instantly. If your seizures are frequent or recent, it is
+      worth writing something on a card and putting it in your wallet today,
+      rather than waiting for a tag to arrive.
+    </div>
+
+    <div class="btn-row mt-lg">
+      {% if current_user %}
+        <a class="btn btn--primary" href="{{ url_for('records.edit') }}">Write down my information</a>
+      {% else %}
+        <a class="btn btn--primary" href="{{ url_for('auth.register') }}">Keep my information here</a>
+      {% endif %}
+      <a class="btn btn--ghost" href="{{ url_for('main.first_aid') }}">Seizure first aid</a>
+    </div>
+  </div>
+</section>
+{% endblock %}
