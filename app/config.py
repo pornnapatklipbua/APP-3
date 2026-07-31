@@ -12,6 +12,24 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
+def _env_int(name: str, default: int) -> int:
+    """Read an integer setting, tolerating blank and malformed values.
+
+    A blueprint field left empty in the Render dashboard is set to an empty
+    string rather than left unset, so ``os.environ.get(name, "587")`` returns
+    ``""`` and not the fallback. Passing that to int() raises at import time and
+    the whole service fails to boot with an opaque traceback -- so fall back
+    here instead of trusting the value.
+    """
+    raw = (os.environ.get(name) or "").strip()
+    if not raw:
+        return default
+    try:
+        return int(raw)
+    except ValueError:
+        return default
+
+
 def _normalise_database_url(url: str) -> str:
     """Render hands out ``postgres://`` URLs; SQLAlchemy 2 wants an explicit driver."""
     if url.startswith("postgres://"):
@@ -53,9 +71,9 @@ class Config:
     # inside Render's free 512 MB tier: each concurrent hash allocates
     # ARGON2_MEMORY_KIB in full, and the start command caps concurrency at 4,
     # so this reserves 128 MB worst case. Raise to 65536 on a larger instance.
-    ARGON2_TIME_COST = int(os.environ.get("ARGON2_TIME_COST", "3"))
-    ARGON2_MEMORY_KIB = int(os.environ.get("ARGON2_MEMORY_KIB", "32768"))
-    ARGON2_PARALLELISM = int(os.environ.get("ARGON2_PARALLELISM", "1"))
+    ARGON2_TIME_COST = _env_int("ARGON2_TIME_COST", 3)
+    ARGON2_MEMORY_KIB = _env_int("ARGON2_MEMORY_KIB", 32768)
+    ARGON2_PARALLELISM = _env_int("ARGON2_PARALLELISM", 1)
 
     # --- Session cookies --------------------------------------------------
     SESSION_COOKIE_NAME = "auraline_session"
@@ -73,7 +91,7 @@ class Config:
     # database and readable by the site host at /admin/tag-requests.
     CONTACT_EMAIL = os.environ.get("CONTACT_EMAIL", "")
     SMTP_HOST = os.environ.get("SMTP_HOST", "")
-    SMTP_PORT = int(os.environ.get("SMTP_PORT", "587"))
+    SMTP_PORT = _env_int("SMTP_PORT", 587)
     SMTP_USERNAME = os.environ.get("SMTP_USERNAME", "")
     SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "")
     SMTP_FROM = os.environ.get("SMTP_FROM", "")

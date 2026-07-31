@@ -171,6 +171,28 @@ Only write it to a physical NFC tag once that passes.
 
 ---
 
+## 7. Fulfilling a physical tag request
+
+When someone uses **Request a tag** while signed in, their request appears at
+`/admin/tag-requests` with a **Reveal link** button. Clicking it shows their
+emergency URL right there, so you can write it to an NTAG and post it.
+
+If you need a link with no request open — replacing a lost tag in person, say
+— use `/admin/emergency-links`, which lists every account and lets you search
+by exact username or email.
+
+Both are the one place in the app where you, not just the tag's owner, can see
+that link — everywhere else it is invisible to everyone but them, including the
+medical fields behind it. Neither page lists tokens in bulk: you reveal one at
+a time, on a click, and every reveal is written into *that person's own*
+access log as "Opened by the site host" at `/my-information/emergency` — so
+they always know it happened, the same way they would see an ordinary scan.
+This is stated on the site's privacy page, not hidden: someone who does not
+want you to have this ability can set up their own tag and print their own QR
+code instead of requesting a physical one.
+
+---
+
 ## Troubleshooting
 
 **`Refusing to start in production without: ...`**

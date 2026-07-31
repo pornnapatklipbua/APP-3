@@ -24,7 +24,7 @@ from flask import (
 
 from ..extensions import db
 from ..models import EmergencyCard, EpilepsyProfile
-from ..security import blind_index, login_required, new_card_token
+from ..security import login_required
 
 bp = Blueprint("records", __name__)
 
@@ -37,27 +37,6 @@ def _own_profile() -> EpilepsyProfile | None:
 
 def _own_card() -> EmergencyCard | None:
     return db.session.scalar(db.select(EmergencyCard).filter_by(user_id=g.user.id))
-
-
-def _issue_card(existing: EmergencyCard | None = None) -> EmergencyCard:
-    """Mint a fresh token. Collisions are not a practical concern at 128 bits,
-    but the loop costs nothing and turns an astronomically unlikely integrity
-    error into a retry."""
-    for _ in range(5):
-        token = new_card_token()
-        lookup = blind_index(token)
-        if db.session.scalar(db.select(EmergencyCard).filter_by(token_lookup=lookup)):
-            continue
-        if existing is None:
-            card = EmergencyCard(user_id=g.user.id, token=token, token_lookup=lookup)
-            db.session.add(card)
-            return card
-        existing.token = token
-        existing.token_lookup = lookup
-        existing.regenerated_at = datetime.now(timezone.utc)
-        existing.accesses.clear()  # the log belonged to the retired tag
-        return existing
-    raise RuntimeError("Could not allocate an unused emergency card token.")
 
 
 @bp.route("/my-information")
@@ -141,13 +120,12 @@ def emergency():
 @bp.route("/my-information/emergency/create", methods=["POST"])
 @login_required
 def emergency_create():
-    if _own_card() is not None:
-        flash("You already have an emergency tag link.", "info")
-        return redirect(url_for("records.emergency"))
-
-    _issue_card()
+    card, created = EmergencyCard.get_or_create(g.user.id)
     db.session.commit()
-    flash("Your emergency link is ready to write to a tag.", "success")
+    if created:
+        flash("Your emergency link is ready to write to a tag.", "success")
+    else:
+        flash("You already have an emergency tag link.", "info")
     return redirect(url_for("records.emergency"))
 
 
@@ -158,7 +136,7 @@ def emergency_regenerate():
     if card is None:
         return redirect(url_for("records.emergency"))
 
-    _issue_card(existing=card)
+    card.regenerate()
     db.session.commit()
     flash(
         "A new link has been issued. The old one no longer works, so any tag "

@@ -472,6 +472,29 @@ def main() -> int:
         raw_tag = db.session.execute(db.text("SELECT postal_address FROM tag_requests")).first()
         check("Tag address encrypted at rest", "Elm Row" not in str(raw_tag[0]))
 
+    # A second request, made while signed in, is the one that can be fulfilled.
+    # A dedicated account, so this does not leave the sam.okafor account (used
+    # heavily below, including in the "no card exists yet" assertions further
+    # down) holding a card it did not ask for.
+    requester = app.test_client()
+    register(requester, "requester", "requester@example.com", GOOD_PASSWORD)
+    response = requester.post(
+        "/request-a-tag",
+        data={
+            "csrf_token": token_for(requester, "/request-a-tag"),
+            "full_name": "Priya Nair",
+            "email": "requester@example.com",
+            "postal_address": "9 Dock Lane\nGlasgow\nG1 1AA",
+            "tag_style": "Wallet card",
+        },
+        follow_redirects=True,
+    )
+    with app.app_context():
+        signed_in_request = db.session.scalar(
+            db.select(TagRequest).filter(TagRequest.user_id.is_not(None))
+        )
+        signed_in_request_id = signed_in_request.id
+
     print("\nAdmin gating")
     clear_limits()
     check("Non-admin gets 404", client.get("/admin/tag-requests").status_code == 404)
@@ -479,7 +502,148 @@ def main() -> int:
     register(host, "thehost", "host@example.com", GOOD_PASSWORD)
     response = host.get("/admin/tag-requests")
     check("Admin can read requests", response.status_code == 200, f"got {response.status_code}")
-    check("Admin sees decrypted request", "Sam Okafor" in response.get_data(as_text=True))
+    check("Admin sees decrypted request", "Priya Nair" in response.get_data(as_text=True))
+    check("Reveal button offered for a signed-in request", "Reveal link" in response.get_data(as_text=True))
+
+    print("\nAdmin fulfilment: revealing an emergency link")
+    with app.app_context():
+        owner_id = db.session.get(TagRequest, signed_in_request_id).user_id
+        had_card_before = db.session.scalar(
+            db.select(db.func.count()).select_from(EmergencyCard).filter_by(user_id=owner_id)
+        )
+    check("No card existed yet for this account", had_card_before == 0, f"{had_card_before} cards")
+
+    response = host.post(
+        f"/admin/tag-requests/{signed_in_request_id}/reveal-emergency-link",
+        data={"csrf_token": token_for(host, "/admin/tag-requests")},
+        follow_redirects=True,
+    )
+    body = response.get_data(as_text=True)
+    check("Reveal succeeds", response.status_code == 200, f"got {response.status_code}")
+    check("Flash contains an emergency URL", "/e/" in body)
+
+    with app.app_context():
+        revealed_card = db.session.scalar(db.select(EmergencyCard).filter_by(user_id=owner_id))
+        check("A card was created on the owner's behalf", revealed_card is not None)
+        check(
+            "Revealed token appears in the flashed URL",
+            revealed_card is not None and revealed_card.token in body,
+        )
+        entry = db.session.scalar(
+            db.select(EmergencyAccess).filter_by(
+                card_id=revealed_card.id, source=EmergencyAccess.SOURCE_ADMIN_REVEAL
+            )
+        )
+        check("Reveal was logged with the admin_reveal source", entry is not None)
+
+    response = requester.get("/my-information/emergency")
+    check(
+        "Owner sees the admin reveal in their own log",
+        "Opened by the site host" in response.get_data(as_text=True),
+    )
+
+    non_admin_signup = app.test_client()
+    register(non_admin_signup, "notthehost", "notthehost@example.com", GOOD_PASSWORD)
+    check(
+        "Non-admin cannot reveal",
+        non_admin_signup.post(
+            f"/admin/tag-requests/{signed_in_request_id}/reveal-emergency-link",
+            data={"csrf_token": token_for(non_admin_signup, "/")},
+        ).status_code
+        in (302, 404),
+    )
+
+    with app.app_context():
+        anon_request_id = db.session.scalar(
+            db.select(TagRequest.id).filter(TagRequest.user_id.is_(None)).limit(1)
+        )
+    response = host.post(
+        f"/admin/tag-requests/{anon_request_id}/reveal-emergency-link",
+        data={"csrf_token": token_for(host, "/admin/tag-requests")},
+        follow_redirects=True,
+    )
+    check(
+        "Anonymous request cannot be revealed",
+        "not submitted while signed in" in response.get_data(as_text=True),
+    )
+    with app.app_context():
+        no_stray_card = db.session.scalar(
+            db.select(db.func.count()).select_from(EmergencyCard)
+        )
+    check(
+        "No card was created for the anonymous request",
+        no_stray_card == 1,
+        f"{no_stray_card} cards total",
+    )
+
+    print("\nEmergency links directory")
+    clear_limits()
+    check(
+        "Non-admin cannot reach the directory",
+        non_admin_signup.get("/admin/emergency-links").status_code == 404,
+    )
+    response = host.get("/admin/emergency-links")
+    check("Admin can open the directory", response.status_code == 200)
+    body = response.get_data(as_text=True)
+    check("Directory lists a registered account", "requester" in body)
+    check("Directory shows field count, not values", "field" in body.lower())
+    check("Directory never shows a token itself", "/e/" not in body)
+
+    response = host.get("/admin/emergency-links?q=requester")
+    check("Exact-username search finds the account", "requester" in response.get_data(as_text=True))
+
+    response = host.get("/admin/emergency-links?q=requester@example.com")
+    check("Exact-email search finds the same account", "requester" in response.get_data(as_text=True))
+
+    response = host.get("/admin/emergency-links?q=nobody-by-this-name")
+    check("Search with no match finds nothing", "requester" not in response.get_data(as_text=True))
+
+    with app.app_context():
+        requester_id = db.session.scalar(
+            db.select(User.id).filter_by(username_lookup=_bi(app, "requester"))
+        )
+        existing_card_before = db.session.scalar(
+            db.select(EmergencyCard).filter_by(user_id=requester_id)
+        )
+        existing_token = existing_card_before.token
+        access_count_before = db.session.scalar(
+            db.select(db.func.count()).select_from(EmergencyAccess).filter_by(card_id=existing_card_before.id)
+        )
+
+    response = host.post(
+        f"/admin/emergency-links/{requester_id}/reveal",
+        data={"csrf_token": token_for(host, "/admin/emergency-links")},
+        follow_redirects=True,
+    )
+    check("Directory reveal succeeds", response.status_code == 200)
+    check(
+        "Directory reveal returns the same existing token, not a new one",
+        existing_token in response.get_data(as_text=True),
+    )
+    with app.app_context():
+        access_count_after = db.session.scalar(
+            db.select(db.func.count()).select_from(EmergencyAccess).filter_by(card_id=existing_card_before.id)
+        )
+    check(
+        "Directory reveal is logged too",
+        access_count_after == access_count_before + 1,
+        f"{access_count_before} -> {access_count_after}",
+    )
+
+    response = requester.get("/my-information/emergency")
+    check(
+        "Second reveal also shows up in the owner's own log",
+        response.get_data(as_text=True).count("Opened by the site host") >= 2,
+    )
+
+    check(
+        "Non-admin cannot POST a reveal directly",
+        non_admin_signup.post(
+            f"/admin/emergency-links/{requester_id}/reveal",
+            data={"csrf_token": token_for(non_admin_signup, "/")},
+        ).status_code
+        in (302, 404),
+    )
 
     print("\nAccount deletion")
     clear_limits()
@@ -532,7 +696,10 @@ def main() -> int:
     check("Card created", "ready to write to a tag" in response.get_data(as_text=True))
 
     with app.app_context():
-        card = db.session.scalar(db.select(EmergencyCard))
+        sam_id = db.session.scalar(
+            db.select(User.id).filter_by(username_lookup=_bi(app, "sam.okafor"))
+        )
+        card = db.session.scalar(db.select(EmergencyCard).filter_by(user_id=sam_id))
         card_token = card.token
         card_id = card.id
     check("Token is 128-bit URL-safe", len(card_token) == 22, f"{len(card_token)} chars")
@@ -581,12 +748,16 @@ def main() -> int:
         follow_redirects=True,
     )
     with app.app_context():
-        cards = db.session.scalars(db.select(EmergencyCard)).all()
-        tokens = {c.token for c in cards}
-    check("Each account gets a distinct token", len(tokens) == 2, f"{len(tokens)} tokens")
+        neighbour_id = db.session.scalar(
+            db.select(User.id).filter_by(username_lookup=_bi(app, "neighbour"))
+        )
+        neighbour_token = db.session.scalar(
+            db.select(EmergencyCard.token).filter_by(user_id=neighbour_id)
+        )
+    check("Each account gets a distinct token", neighbour_token != card_token)
     check(
         "Neighbour's card does not show my data",
-        "Lamotrigine" not in scanner.get(f"/e/{(tokens - {card_token}).pop()}").get_data(as_text=True),
+        "Lamotrigine" not in scanner.get(f"/e/{neighbour_token}").get_data(as_text=True),
     )
 
     print("\nEmergency tag lifecycle")

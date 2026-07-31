@@ -387,6 +387,45 @@ class EmergencyCard(db.Model):
         order_by="EmergencyAccess.accessed_at.desc()",
     )
 
+    @classmethod
+    def get_or_create(cls, user_id: int) -> tuple["EmergencyCard", bool]:
+        """Return ``(card, created)``. Shared by the owner's own "create my
+        link" button and the admin fulfilment flow below, so there is exactly
+        one place a token is ever minted."""
+        from .security import blind_index, new_card_token
+
+        existing = db.session.scalar(db.select(cls).filter_by(user_id=user_id))
+        if existing is not None:
+            return existing, False
+
+        for _ in range(5):
+            token = new_card_token()
+            lookup = blind_index(token)
+            if db.session.scalar(db.select(cls).filter_by(token_lookup=lookup)):
+                continue  # astronomically unlikely at 128 bits; retry costs nothing
+            card = cls(user_id=user_id, token=token, token_lookup=lookup)
+            db.session.add(card)
+            db.session.flush()  # assigns card.id, which callers need immediately
+            return card, True
+        raise RuntimeError("Could not allocate an unused emergency card token.")
+
+    def regenerate(self) -> None:
+        from .security import blind_index, new_card_token
+
+        for _ in range(5):
+            token = new_card_token()
+            lookup = blind_index(token)
+            if db.session.scalar(
+                db.select(EmergencyCard).filter_by(token_lookup=lookup)
+            ):
+                continue
+            self.token = token
+            self.token_lookup = lookup
+            self.regenerated_at = _utcnow()
+            self.accesses.clear()  # the log belonged to the retired tag
+            return
+        raise RuntimeError("Could not allocate an unused emergency card token.")
+
 
 class EmergencyAccess(db.Model):
     """A record that someone opened the card, so the owner can see it happening.
@@ -394,9 +433,19 @@ class EmergencyAccess(db.Model):
     The viewer's address is stored only as a keyed hash. That is enough to tell
     one scanner apart from another in the owner's log, without this site keeping
     a list of the IP addresses of people who have helped them.
+
+    ``source`` distinguishes an anonymous scan of the tag from an admin opening
+    the raw link to fulfil a physical tag order (see
+    :meth:`EmergencyCard.get_or_create` callers in ``views/main.py``). The
+    latter is never silent -- it is written here specifically so the owner's own
+    log is the place that discloses it, not a private admin record they cannot
+    see.
     """
 
     __tablename__ = "emergency_accesses"
+
+    SOURCE_SCAN = "scan"
+    SOURCE_ADMIN_REVEAL = "admin_reveal"
 
     # Older rows are pruned beyond this many per card, so a tag left on a desk
     # cannot grow the table without bound.
@@ -408,6 +457,7 @@ class EmergencyAccess(db.Model):
     )
     accessed_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), default=_utcnow)
     source_hash: Mapped[str | None] = mapped_column(sa.String(64))
+    source: Mapped[str] = mapped_column(sa.String(20), default=SOURCE_SCAN, nullable=False)
 
     card: Mapped[EmergencyCard] = relationship(back_populates="accesses")
 

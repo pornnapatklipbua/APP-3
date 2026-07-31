@@ -8,6 +8,16 @@
     <h1>Tag requests</h1>
     <p class="lede">{{ requests|length }} most recent request{{ '' if requests|length == 1 else 's' }}.</p>
 
+    <p class="faint">
+      <a href="{{ url_for('main.admin_emergency_links') }}">Look up any account's emergency link &rarr;</a>
+    </p>
+
+    <div class="note mt-md">
+      <strong>Revealing an emergency link is logged to that person's own account.</strong>
+      It only works for requests made while signed in. Use it once, write the
+      link to the tag, then mark the request sent.
+    </div>
+
     {% if not requests %}
       <div class="empty-state mt-lg">
         <h2>Nothing yet</h2>
@@ -23,6 +33,7 @@
               <th scope="col">Person</th>
               <th scope="col">Address</th>
               <th scope="col">Tag</th>
+              <th scope="col">Emergency link</th>
               <th scope="col">Status</th>
             </tr>
           </thead>
@@ -41,6 +52,17 @@
                   {{ r.tag_style or 'No preference' }}
                   {% if r.engraving %}<br><span class="faint">{{ r.engraving }}</span>{% endif %}
                   {% if r.message %}<br><span class="faint">{{ r.message }}</span>{% endif %}
+                </td>
+                <td>
+                  {% if r.user_id %}
+                    <form method="post" action="{{ url_for('main.admin_reveal_emergency_link', request_id=r.id) }}"
+                          data-confirm="Reveal this person's emergency link? It will be shown below and logged on their own account as opened by the site host.">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <button type="submit" class="btn btn--quiet">Reveal link</button>
+                    </form>
+                  {% else %}
+                    <span class="faint">No account &mdash; not signed in when sent</span>
+                  {% endif %}
                 </td>
                 <td>
                   <span class="pill pill--{{ r.status }}">{{ r.status }}</span>

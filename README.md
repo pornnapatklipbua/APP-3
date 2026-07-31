@@ -43,12 +43,48 @@ situation the tag exists for. What protects it instead:
 | Caching | `no-store, private` on every response. |
 | Brute force | Only *failed* lookups are charged against a rate-limit budget. A valid scan is never rate limited — a responder must never be turned away because someone was probing the site an hour earlier. |
 | A lost tag | The owner can switch it off instantly (reversible) or issue a new address that permanently retires the old one. |
-| Not knowing it was used | Every view is logged for the owner. The viewer's IP is stored only as a keyed hash, so repeat scanners can be told apart without the site keeping a list of the people who helped them. |
+| Not knowing it was used | Every view is logged for the owner. For an ordinary scan the viewer's IP is stored only as a keyed hash, so repeat scanners can be told apart without the site keeping a list of the people who helped them. |
 
 The token is stored **encrypted rather than hashed** — the one place this project
 does not hash a secret. A hash would be stronger, but the tag is a physical
 object programmed once, and the owner has to read the URL back to write a
 replacement or print a card. Hashing would strand every tag already in a wallet.
+
+### The one deliberate exception: the site host can reveal any link
+
+Everywhere else in the app, the token is invisible to everyone but its owner —
+not even the site host has a route that shows it, and the medical fields stay
+encrypted regardless. Fulfilling a physical tag breaks that, on purpose: if a
+human is writing someone's link onto an NTAG before mailing it, that human
+needs the exact URL, and there is no way around that once fulfilment is not the
+owner printing their own QR code.
+
+Two admin surfaces reveal a link, both going through the same logged path:
+
+| Route | Scope |
+|---|---|
+| `/admin/tag-requests` → **Reveal link** | Requests submitted while signed in |
+| `/admin/emergency-links` | Every registered account, searchable by exact username or email — for handing out a link with no shipping request open, e.g. replacing a lost tag in person |
+
+What keeps either from being an open door:
+
+- **Never bulk-visible.** No page lists tokens; each is revealed individually,
+  one click at a time.
+- **Never silent.** Every reveal writes an `EmergencyAccess` row with
+  `source="admin_reveal"`, which shows up **in the owner's own access log** at
+  `/my-information/emergency`, labelled "Opened by the site host" — the same
+  list an ordinary scan appears in, not a private admin record the owner has no
+  way to check.
+- **Never the medical content.** The reveal surfaces the link, not the
+  encrypted fields behind it — `/admin/emergency-links` shows only a field
+  count (`12 of 23 filled in`), never a value.
+
+This is a real, meaningful widening of who can reach one person's information
+— from "nobody but the owner" to "the owner, or the site host on a logged,
+deliberate action." It is stated plainly on the privacy page, not left
+implicit: a user who does not want the site host to have this ability at all
+should set up their own tag and print their own QR code, rather than using
+"Request a tag".
 
 ### What a responder sees
 
@@ -94,7 +130,7 @@ functional.
 | Cached health data | Pages under `/my-information`, `/my-details`, `/account`, `/sign-in` and `/admin` are sent `Cache-Control: no-store, private`. |
 | Form spam | Per-IP rolling-window rate limits, plus honeypot fields on the tag and registration forms. |
 | Open redirect after sign-in | The `next` destination is validated to be a same-site path. |
-| Emergency tag exposure | See [The emergency tag](#the-emergency-tag) above — capability URL, no referrer, no indexing, no caching, failure-only rate limiting, revocable. |
+| Emergency tag exposure | See [The emergency tag](#the-emergency-tag) above — capability URL, no referrer, no indexing, no caching, failure-only rate limiting, revocable. One deliberate, logged exception for physical fulfilment — see below. |
 | Misconfigured production deploy | The app refuses to boot in production without `SECRET_KEY`, `FIELD_ENCRYPTION_KEYS` and `BLIND_INDEX_KEY`. |
 
 Verify the encryption claims yourself — `smoke_test.py` reads the raw database

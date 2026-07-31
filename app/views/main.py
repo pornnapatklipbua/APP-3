@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+import sqlalchemy as sa
 from flask import Blueprint, flash, g, redirect, render_template, request, url_for
 
 from ..extensions import db
 from ..mailer import send_tag_request_notification
-from ..models import TagRequest
-from ..security import admin_required, rate_limit
+from ..models import EmergencyAccess, EmergencyCard, EpilepsyProfile, TagRequest, User
+from ..security import admin_required, blind_index, rate_limit
 
 bp = Blueprint("main", __name__)
 
@@ -128,3 +129,110 @@ def admin_update_status(request_id: int):
         db.session.commit()
         flash(f"Request #{request_id} marked as {status}.", "success")
     return redirect(url_for("main.admin_tag_requests"))
+
+
+def _reveal_and_log(user_id: int) -> tuple[EmergencyCard, bool]:
+    """Mint a card if the account does not have one yet, and record who looked.
+
+    This is the one path in the app where the site host can read a raw
+    emergency link rather than just its existence -- everywhere else, the
+    token is invisible to everyone but the tag's owner. It exists because
+    fulfilling a physical tag needs the exact URL to write to it, and there is
+    no way around that once fulfilment is done by hand rather than by the
+    owner printing their own QR code.
+
+    What keeps it honest: it reveals one link at a time, on an explicit click,
+    never a bulk listing of tokens. And it is logged into the *owner's own*
+    access log, by name, the same place an ordinary scan would appear -- so
+    this is never a private admin action the owner has no way to see.
+    """
+    card, created = EmergencyCard.get_or_create(user_id)
+    db.session.add(
+        EmergencyAccess(
+            card_id=card.id,
+            source=EmergencyAccess.SOURCE_ADMIN_REVEAL,
+            source_hash=blind_index(f"admin-reveal:{g.user.id}:{user_id}"),
+        )
+    )
+    db.session.commit()
+    return card, created
+
+
+def _reveal_flash(card: EmergencyCard, created: bool, label: str) -> None:
+    url = url_for("emergency.card", token=card.token, _external=True)
+    note = (
+        " A link had not been set up yet, so a new one was just created for them."
+        if created
+        else ""
+    )
+    flash(f"Emergency link for {label}: {url}{note}", "success")
+
+
+@bp.route("/admin/tag-requests/<int:request_id>/reveal-emergency-link", methods=["POST"])
+@admin_required
+def admin_reveal_emergency_link(request_id: int):
+    tag_request = db.session.get(TagRequest, request_id)
+    if tag_request is None:
+        flash("That request no longer exists.", "error")
+        return redirect(url_for("main.admin_tag_requests"))
+
+    if tag_request.user_id is None:
+        flash(
+            "This request was not submitted while signed in, so there is no "
+            "account to link a tag to. Ask the requester to create an "
+            "account and set up their own tag at /my-information/emergency "
+            "-- you will then be able to reveal it here, or from Emergency "
+            "links once they have registered.",
+            "error",
+        )
+        return redirect(url_for("main.admin_tag_requests"))
+
+    card, created = _reveal_and_log(tag_request.user_id)
+    _reveal_flash(card, created, f"request #{request_id}")
+    return redirect(url_for("main.admin_tag_requests"))
+
+
+@bp.route("/admin/emergency-links")
+@admin_required
+def admin_emergency_links():
+    """Every account, so the host can look up or hand out an emergency link
+    without waiting for a shipping request to exist -- a lost tag being
+    replaced in person, for instance.
+
+    Deliberately not a page that displays tokens directly: it lists accounts
+    and whether each has a card, and reveals one link at a time through the
+    same logged path as the tag-request page.
+    """
+    query = (request.args.get("q") or "").strip()
+
+    stmt = db.select(User).order_by(User.created_at.desc())
+    if query:
+        # The blind index is an exact-match lookup, not a substring search --
+        # usernames and emails are encrypted, so there is no column to LIKE
+        # against. A query that does not match either exactly returns nothing.
+        lookup = blind_index(query)
+        stmt = db.select(User).where(
+            sa.or_(User.username_lookup == lookup, User.email_lookup == lookup)
+        )
+
+    users_ = db.session.scalars(stmt.limit(200)).all()
+    cards_by_user = {c.user_id: c for c in db.session.scalars(db.select(EmergencyCard)).all()}
+    profiles_by_user = {
+        p.user_id: p for p in db.session.scalars(db.select(EpilepsyProfile)).all()
+    }
+    rows = [(u, cards_by_user.get(u.id), profiles_by_user.get(u.id)) for u in users_]
+
+    return render_template("admin/emergency_links.html", rows=rows, query=query)
+
+
+@bp.route("/admin/emergency-links/<int:user_id>/reveal", methods=["POST"])
+@admin_required
+def admin_reveal_user_link(user_id: int):
+    user = db.session.get(User, user_id)
+    if user is None:
+        flash("That account no longer exists.", "error")
+        return redirect(url_for("main.admin_emergency_links"))
+
+    card, created = _reveal_and_log(user_id)
+    _reveal_flash(card, created, user.username)
+    return redirect(url_for("main.admin_emergency_links"))

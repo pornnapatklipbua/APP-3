@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}Emergency links - Auraline{% endblock %}
+
+{% block content %}
+<section class="section">
+  <div class="wrap">
+    <p class="eyebrow">Host only</p>
+    <h1>Emergency links</h1>
+    <p class="lede">
+      Every account, so you can look up or hand out someone's emergency link
+      without a shipping request already open &mdash; replacing a lost tag in
+      person, for instance.
+    </p>
+
+    <p class="faint">
+      <a href="{{ url_for('main.admin_tag_requests') }}">&larr; Back to tag requests</a>
+    </p>
+
+    <div class="note note--amber mt-md">
+      <strong>Revealing a link is not a small thing.</strong> It shows you the
+      exact page a paramedic would see if they scanned that person's tag. Only
+      do it because you are actually about to write or hand over a tag. Every
+      reveal is logged to that person's own account, by name &mdash; they will
+      see it.
+    </div>
+
+    <form method="get" class="mt-lg" style="max-width: 26rem;">
+      <div class="field">
+        <label for="q">Find an account</label>
+        <span class="field__hint" id="q-hint">
+          Exact username or email &mdash; both are encrypted, so this cannot
+          search partial matches.
+        </span>
+        <input type="text" id="q" name="q" value="{{ query }}" aria-describedby="q-hint">
+      </div>
+      <div class="btn-row">
+        <button type="submit" class="btn btn--ghost">Search</button>
+        {% if query %}<a class="btn btn--quiet" href="{{ url_for('main.admin_emergency_links') }}">Clear</a>{% endif %}
+      </div>
+    </form>
+
+    {% if query and not rows %}
+      <div class="empty-state mt-lg">
+        <h2>No exact match</h2>
+        <p>Check the spelling &mdash; this only matches an exact username or email address.</p>
+      </div>
+    {% elif not rows %}
+      <div class="empty-state mt-lg">
+        <h2>No accounts yet</h2>
+      </div>
+    {% else %}
+      <div class="table-scroll mt-lg">
+        <table class="data">
+          <thead>
+            <tr>
+              <th scope="col">Account</th>
+              <th scope="col">Joined</th>
+              <th scope="col">Record</th>
+              <th scope="col">Emergency tag</th>
+              <th scope="col"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for user, card, profile in rows %}
+              <tr>
+                <td>
+                  <strong>{{ user.username }}</strong><br>
+                  <a href="mailto:{{ user.email }}">{{ user.email }}</a>
+                </td>
+                <td>{{ user.created_at.strftime('%d %b %Y') }}</td>
+                <td>
+                  {% if profile and not profile.is_empty() %}
+                    {{ profile.completed_count() }} of {{ profile.field_names()|length }} fields filled in
+                  {% else %}
+                    <span class="faint">Empty</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if card %}
+                    <span class="status status--{{ 'live' if card.is_active else 'off' }}">
+                      {{ 'Live' if card.is_active else 'Off' }}
+                    </span>
+                  {% else %}
+                    <span class="faint">Not created</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <form method="post" action="{{ url_for('main.admin_reveal_user_link', user_id=user.id) }}"
+                        data-confirm="Reveal {{ user.username }}'s emergency link? This is logged on their own account as opened by the site host.">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn--quiet">Reveal link</button>
+                  </form>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% if rows|length == 200 %}
+        <p class="faint mt-md">Showing the 200 most recently joined accounts. Search to find an older one.</p>
+      {% endif %}
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

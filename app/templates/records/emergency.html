@@ -93,15 +93,26 @@
       {% if card.accesses %}
         <p class="muted">
           The {{ card.accesses|length }} most recent view{{ '' if card.accesses|length == 1 else 's' }}.
-          We record when your card was opened, but not who by &mdash; the viewer's
-          address is stored only as a one-way hash, so repeat visitors can be told
-          apart without us keeping a list of the people who helped you.
+          For an ordinary scan we record when it happened, but not who by &mdash;
+          the viewer's address is stored only as a one-way hash. The one
+          exception is listed below: if the site host opens your link
+          themselves to write a physical tag for you, that is logged here by
+          name, not hidden in a private record you cannot see.
         </p>
         <ul class="access-log mt-md">
           {% for access in card.accesses[:15] %}
             <li>
-              <span>{{ access.accessed_at.strftime('%d %B %Y') }}</span>
-              <span class="faint">{{ access.accessed_at.strftime('%H:%M UTC') }}</span>
+              <span>
+                {% if access.source == 'admin_reveal' %}
+                  <strong>Opened by the site host</strong> &mdash; usually to prepare or replace a physical tag
+                {% else %}
+                  Tag scanned
+                {% endif %}
+              </span>
+              <span>
+                {{ access.accessed_at.strftime('%d %B %Y') }}
+                <span class="faint">{{ access.accessed_at.strftime('%H:%M UTC') }}</span>
+              </span>
             </li>
           {% endfor %}
         </ul>
