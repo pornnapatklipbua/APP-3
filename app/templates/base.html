@@ -24,7 +24,6 @@
         {% block sitenav %}
           <a href="{{ url_for('main.about') }}" {% if request.endpoint == 'main.about' %}aria-current="page"{% endif %}>About epilepsy</a>
           <a href="{{ url_for('main.first_aid') }}" {% if request.endpoint == 'main.first_aid' %}aria-current="page"{% endif %}>Seizure first aid</a>
-          <a href="{{ url_for('main.request_tag') }}" {% if request.endpoint == 'main.request_tag' %}aria-current="page"{% endif %}>Request a tag</a>
 
           <span class="nav__divider" aria-hidden="true"></span>
 
