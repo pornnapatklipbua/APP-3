@@ -96,6 +96,16 @@ class Config:
     SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "")
     SMTP_FROM = os.environ.get("SMTP_FROM", "")
 
-    # --- Host access ------------------------------------------------------
-    # Comma-separated emails allowed to read incoming tag requests.
+    # --- Admin access -----------------------------------------------------
+    # Which accounts may open /admin/... . Nothing here is tied to a device or
+    # a network: an admin signs in with these credentials from anywhere, the
+    # same as any other account.
+    #
+    # Comma-separated usernames. This is the one to set -- it matches what you
+    # actually type at sign-in, and is checked case-insensitively.
+    ADMIN_USERNAMES = os.environ.get("ADMIN_USERNAMES", "")
+
+    # Comma-separated emails. Kept alongside the above so an existing
+    # deployment does not lose admin access the moment this is deployed;
+    # either match grants access. Prefer ADMIN_USERNAMES for new setups.
     ADMIN_EMAILS = os.environ.get("ADMIN_EMAILS", "")

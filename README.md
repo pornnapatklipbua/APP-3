@@ -259,14 +259,14 @@ In the service's **Environment** tab:
 |---|---|
 | `FIELD_ENCRYPTION_KEYS` | The Fernet key from step 2 |
 | `BLIND_INDEX_KEY` | The token from step 2 |
-| `ADMIN_EMAILS` | The email you will register with, so you can read tag requests |
+| `ADMIN_USERNAMES` | The username you will register with, so you can read tag requests |
 | `CONTACT_EMAIL` | Where tag requests are emailed |
 | `SMTP_HOST` / `SMTP_PORT` / `SMTP_USERNAME` / `SMTP_PASSWORD` / `SMTP_FROM` | SMTP details — without these, nobody can reset a password |
 
 ### 5. Register your own account
 
 Visit `/create-account` on the deployed site and register with the address you
-put in `ADMIN_EMAILS`. That unlocks `/admin/tag-requests` for you; everyone else
+put in `ADMIN_USERNAMES`. That unlocks `/admin/tag-requests` for you; everyone else
 gets a 404 there.
 
 ### Notes on the free tier
@@ -295,7 +295,7 @@ carries the chip; the QR is a backup for phones that will not read NFC, and it
 defaults to on.
 
 Submitted requests are stored encrypted and listed at **`/admin/tag-requests`**,
-readable only by the accounts in `ADMIN_EMAILS` (anyone else gets a 404, so the
+readable only by the accounts named in `ADMIN_USERNAMES` (anyone else gets a 404, so the
 page's existence is not advertised). Each can be marked *new*, *in-progress*,
 *sent* or *closed*.
 

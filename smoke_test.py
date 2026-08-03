@@ -27,6 +27,7 @@ os.environ["SECRET_KEY"] = "test-secret-key"
 os.environ["FIELD_ENCRYPTION_KEYS"] = Fernet.generate_key().decode()
 os.environ["BLIND_INDEX_KEY"] = secrets.token_urlsafe(32)
 os.environ["DATABASE_URL"] = f"sqlite:///{DB_PATH.as_posix()}"
+os.environ["ADMIN_USERNAMES"] = "PAM_ADMIN"
 os.environ["ADMIN_EMAILS"] = "host@example.com"
 # Keep hashing cheap so the suite runs quickly; production uses the real values.
 os.environ["ARGON2_TIME_COST"] = "1"
@@ -564,6 +565,68 @@ def main() -> int:
     check("Admin sees decrypted request", "9 Dock Lane" in response.get_data(as_text=True))
     check("Admin sees the account behind the request", "requester" in response.get_data(as_text=True))
     check("Admin sees the QR preference", "printed QR" in response.get_data(as_text=True))
+
+    print("\nAdmin access by username")
+    clear_limits()
+
+    # The intended way to configure an admin: by username, from any device.
+    by_username = app.test_client()
+    register(by_username, "PAM_ADMIN", "pam@example.com", GOOD_PASSWORD)
+    check(
+        "Username in ADMIN_USERNAMES grants admin",
+        by_username.get("/admin/tag-requests").status_code == 200,
+        f"got {by_username.get('/admin/tag-requests').status_code}",
+    )
+    check(
+        "Same account reaches the emergency links page",
+        by_username.get("/admin/emergency-links").status_code == 200,
+    )
+
+    # Signing in again from a different client is what "another device" means
+    # here -- there is no device binding anywhere in the app.
+    other_device = app.test_client()
+    sign_in(other_device, "PAM_ADMIN", GOOD_PASSWORD)
+    check(
+        "Admin works from a second, independent session",
+        other_device.get("/admin/tag-requests").status_code == 200,
+    )
+
+    check(
+        "Username match is case-insensitive",
+        app.test_client() and _admin_ok(app, "pam_admin", GOOD_PASSWORD),
+    )
+
+    # The email fallback must keep working so deploying this cannot lock the
+    # existing admin out.
+    check(
+        "Email in ADMIN_EMAILS still grants admin",
+        host.get("/admin/tag-requests").status_code == 200,
+    )
+
+    # And an ordinary account is still refused.
+    outsider = app.test_client()
+    register(outsider, "outsider", "outsider@example.com", GOOD_PASSWORD)
+    check("Ordinary account still gets 404", outsider.get("/admin/tag-requests").status_code == 404)
+    check(
+        "Ordinary account cannot reach emergency links",
+        outsider.get("/admin/emergency-links").status_code == 404,
+    )
+
+    # With nothing configured, nobody is an admin -- it must fail closed.
+    saved_usernames = app.config["ADMIN_USERNAMES"]
+    saved_emails = app.config["ADMIN_EMAILS"]
+    app.config["ADMIN_USERNAMES"] = ""
+    app.config["ADMIN_EMAILS"] = ""
+    check(
+        "No admin configured means nobody gets in",
+        by_username.get("/admin/tag-requests").status_code == 404,
+    )
+    app.config["ADMIN_USERNAMES"] = saved_usernames
+    app.config["ADMIN_EMAILS"] = saved_emails
+    check(
+        "Restoring the config restores access",
+        by_username.get("/admin/tag-requests").status_code == 200,
+    )
     check("Reveal button offered for a signed-in request", "Reveal link" in response.get_data(as_text=True))
 
     print("\nAdmin fulfilment: revealing an emergency link")
@@ -1058,6 +1121,13 @@ def _bi(app, value: str) -> str:
 
     with app.app_context():
         return blind_index(value)
+
+
+def _admin_ok(app, username: str, password: str) -> bool:
+    """Sign in fresh and report whether the admin pages open."""
+    client = app.test_client()
+    sign_in(client, username, password)
+    return client.get("/admin/tag-requests").status_code == 200
 
 
 if __name__ == "__main__":

@@ -50,7 +50,12 @@ services:
       - key: BLIND_INDEX_KEY
         sync: false
 
-      # Comma-separated emails allowed to read /admin/tag-requests.
+      # Comma-separated usernames allowed to open /admin/... .
+      # An account check, not a device one -- sign in from anywhere.
+      - key: ADMIN_USERNAMES
+        sync: false
+
+      # Optional legacy fallback; either match grants admin access.
       - key: ADMIN_EMAILS
         sync: false
 

@@ -101,7 +101,7 @@ The first two are in `PRODUCTION_KEYS.txt` — open it and copy each value.
 |---|---|
 | `FIELD_ENCRYPTION_KEYS` | The Fernet key from `PRODUCTION_KEYS.txt` |
 | `BLIND_INDEX_KEY` | The token from `PRODUCTION_KEYS.txt` |
-| `ADMIN_EMAILS` | The email address you will register your own account with |
+| `ADMIN_USERNAMES` | The **username** you will register your own account with |
 
 ### Email
 
@@ -152,9 +152,18 @@ Tables are created automatically on first boot. There is no migration step.
 
 ## 5. Register your own account
 
-Go to `/create-account` and sign up **with the address you put in
-`ADMIN_EMAILS`**. That unlocks `/admin/tag-requests`, where tag requests arrive.
-Anyone else visiting that URL gets a 404, so its existence is not advertised.
+Go to `/create-account` and sign up **with the username you put in
+`ADMIN_USERNAMES`**. That unlocks `/admin/tag-requests`, where tag requests
+arrive. Anyone else visiting that URL gets a 404, so its existence is not
+advertised.
+
+Admin is an **account** check, not a device one: sign in with that account from
+a laptop, a phone, anywhere, and the admin pages are there. Nothing in this
+project is tied to a particular machine, browser or network.
+
+If those pages 404 when you expect them not to, check the service logs. The
+refusal writes a line saying whether anything is configured at all, and points
+you at comparing the username on `/account` against `ADMIN_USERNAMES`.
 
 ---
 

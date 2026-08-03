@@ -384,6 +384,35 @@ def login_required(view):
     return wrapper
 
 
+def _config_list(name: str) -> set[str]:
+    raw = current_app.config.get(name) or ""
+    return {item.strip().casefold() for item in raw.split(",") if item.strip()}
+
+
+def is_admin(user) -> bool:
+    """Whether this account may open the admin pages.
+
+    Identity, not location. There is no device, IP or network check anywhere
+    in this project -- an admin signs in from whatever machine they happen to
+    be using, exactly like any other account.
+
+    Username is the intended way to configure this; email is still honoured so
+    that deploying this change cannot lock an existing admin out mid-flight.
+    """
+    if user is None:
+        return False
+
+    usernames = _config_list("ADMIN_USERNAMES")
+    if usernames and (user.username or "").strip().casefold() in usernames:
+        return True
+
+    emails = _config_list("ADMIN_EMAILS")
+    if emails and (user.email or "").strip().casefold() in emails:
+        return True
+
+    return False
+
+
 def admin_required(view):
     @functools.wraps(view)
     def wrapper(*args, **kwargs):
@@ -391,13 +420,32 @@ def admin_required(view):
         if user is None:
             session["next_url"] = request.path
             return redirect(url_for("auth.login"))
-        allowed = {
-            e.strip().lower()
-            for e in (current_app.config.get("ADMIN_EMAILS") or "").split(",")
-            if e.strip()
-        }
-        if not allowed or (user.email or "").lower() not in allowed:
+
+        if not is_admin(user):
+            # A refusal here is silent to the visitor by design, which makes it
+            # very hard to debug a misconfiguration. Log enough to tell "nobody
+            # is configured" apart from "you are not on the list", without
+            # writing the username itself -- usernames are encrypted at rest
+            # precisely because holding an account here implies a diagnosis.
+            usernames = _config_list("ADMIN_USERNAMES")
+            emails = _config_list("ADMIN_EMAILS")
+            if not usernames and not emails:
+                current_app.logger.warning(
+                    "Admin page refused: neither ADMIN_USERNAMES nor ADMIN_EMAILS "
+                    "is set, so no account can reach %s.",
+                    request.path,
+                )
+            else:
+                current_app.logger.warning(
+                    "Admin page refused for a signed-in account at %s. "
+                    "Configured: %d username(s), %d email(s). Compare the "
+                    "username shown on /account with ADMIN_USERNAMES.",
+                    request.path,
+                    len(usernames),
+                    len(emails),
+                )
             abort(404)  # Don't advertise that the page exists.
+
         return view(*args, **kwargs)
 
     return wrapper
