@@ -501,6 +501,27 @@ select {
 
 .required { color: var(--rose); }
 
+/* A checkbox and its label read as one target, so the whole row is clickable
+   and the label sits beside the box rather than above it. */
+.checkbox-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin-bottom: 0.3rem;
+}
+
+.checkbox-row input[type="checkbox"] {
+  flex: none;
+  width: 1.1rem;
+  height: 1.1rem;
+  margin: 0.15rem 0 0;
+  accent-color: var(--violet);
+  cursor: pointer;
+}
+
 fieldset { border: 0; padding: 0; margin: 0 0 2.75rem; }
 
 legend {

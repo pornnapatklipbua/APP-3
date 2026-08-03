@@ -43,13 +43,18 @@
                 <td>{{ r.id }}</td>
                 <td>{{ r.created_at.strftime('%d %b %Y') }}<br><span class="faint">{{ r.created_at.strftime('%H:%M UTC') }}</span></td>
                 <td>
-                  <strong>{{ r.full_name or '-' }}</strong><br>
-                  {% if r.email %}<a href="mailto:{{ r.email }}">{{ r.email }}</a><br>{% endif %}
+                  <strong>{{ r.contact_name or '-' }}</strong><br>
+                  {% if r.contact_email %}<a href="mailto:{{ r.contact_email }}">{{ r.contact_email }}</a><br>{% endif %}
                   {% if r.phone %}<span class="faint">{{ r.phone }}</span>{% endif %}
                 </td>
                 <td>{{ r.postal_address or '-' }}</td>
                 <td>
-                  {{ r.tag_style or 'No preference' }}
+                  {{ r.tag_style or 'No preference' }}<br>
+                  {% if r.wants_qr %}
+                    <span class="pill pill--sent">NFC + printed QR</span>
+                  {% else %}
+                    <span class="pill pill--closed">NFC only</span>
+                  {% endif %}
                   {% if r.engraving %}<br><span class="faint">{{ r.engraving }}</span>{% endif %}
                   {% if r.message %}<br><span class="faint">{{ r.message }}</span>{% endif %}
                 </td>

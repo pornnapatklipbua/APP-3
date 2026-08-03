@@ -1,106 +1,55 @@
 {% extends "base.html" %}
-{% block title %}Request an epilepsy tag - Auraline{% endblock %}
+{% block title %}Request an epilepsy tag - Seizure66{% endblock %}
 {% block description %}Ask us to send you an epilepsy identification tag - a bracelet, necklace, shoe tag or wallet card.{% endblock %}
 
 {% block content %}
 <section class="section">
   <div class="wrap wrap--narrow">
     <p class="eyebrow">Request a tag</p>
-    <h1>Ask us for an epilepsy tag.</h1>
+    <h1>A tag answers the question you cannot.</h1>
     <p class="lede">
-      Tell us where to send it and what you would like it to say. We read every
-      request ourselves and reply by email, usually within a few days.
+      A bracelet, necklace, shoe tag or wallet card that tells a stranger or a
+      paramedic what is happening and who to call, at the moment you cannot
+      tell them yourself.
     </p>
 
     <div class="note mt-md">
-      An epilepsy tag is worn or carried identification - a bracelet, a
-      necklace, a tag on your shoe or a card in your wallet - that tells a
-      stranger or a paramedic what is happening and who to call, at the moment
-      you cannot tell them yourself.
+      Each tag carries an NFC chip, and a printed QR code if you want one. Both
+      point at your own emergency page &mdash; so whoever finds you sees your
+      seizure type, your medication and who to call, without needing to sign in
+      to anything.
     </div>
 
-    <form method="post" class="panel mt-lg" novalidate>
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <h2 class="mt-lg">You will need an account first</h2>
+    <p>
+      Not to make things difficult &mdash; it is what the tag actually points
+      at. An account is where your emergency information lives, and it is how we
+      know who to reply to and which link to write onto your tag. It also means
+      we never have to ask you for your name and email a second time.
+    </p>
 
-      <fieldset>
-        <legend>How we reach you</legend>
-        <p class="fieldset__intro">We use these details to answer your request and nothing else.</p>
+    <ol class="steps mt-md">
+      <li>
+        <h3>Create an account</h3>
+        <p class="muted">A username, an email address and a password. Nothing else.</p>
+      </li>
+      <li>
+        <h3>Write down your information</h3>
+        <p class="muted">Seizure types, triggers, medication, who to call. Every field is optional and you can change it whenever you like.</p>
+      </li>
+      <li>
+        <h3>Order your tag</h3>
+        <p class="muted">The request form is on your own record page. All it asks for is where to post it.</p>
+      </li>
+    </ol>
 
-        <div class="field">
-          <label for="full_name">Your name <span class="required" aria-hidden="true">*</span></label>
-          <input type="text" id="full_name" name="full_name" maxlength="200" required
-                 autocomplete="name" value="{{ form.full_name or '' }}">
-        </div>
-
-        <div class="field">
-          <label for="email">Email address <span class="required" aria-hidden="true">*</span></label>
-          <span class="field__hint" id="email-hint">This is where our reply will go.</span>
-          <input type="email" id="email" name="email" maxlength="320" required
-                 aria-describedby="email-hint" autocomplete="email"
-                 value="{{ form.email or (current_user.email if current_user else '') }}">
-        </div>
-
-        <div class="field">
-          <label for="phone">Phone number</label>
-          <span class="field__hint" id="phone-hint">Optional.</span>
-          <input type="tel" id="phone" name="phone" maxlength="60"
-                 aria-describedby="phone-hint" autocomplete="tel" value="{{ form.phone or '' }}">
-        </div>
-
-        <div class="field">
-          <label for="postal_address">Delivery address <span class="required" aria-hidden="true">*</span></label>
-          <span class="field__hint" id="address-hint">Include the postcode and country.</span>
-          <textarea id="postal_address" name="postal_address" maxlength="2000" required
-                    aria-describedby="address-hint" autocomplete="street-address">{{ form.postal_address or '' }}</textarea>
-        </div>
-      </fieldset>
-
-      <fieldset>
-        <legend>The tag itself</legend>
-        <p class="fieldset__intro">If you are not sure, leave these blank and we will talk it through with you.</p>
-
-        <div class="field">
-          <label for="tag_style">Preferred style</label>
-          <select id="tag_style" name="tag_style">
-            <option value="">No preference</option>
-            {% for style in tag_styles %}
-              <option value="{{ style }}" {% if form.tag_style == style %}selected{% endif %}>{{ style }}</option>
-            {% endfor %}
-          </select>
-        </div>
-
-        <div class="field">
-          <label for="engraving">What it should say</label>
-          <span class="field__hint" id="engraving-hint">
-            Space is limited, so keep it to essentials - for example:
-            "EPILEPSY - see wallet card - ICE 07700 900123". Please do not put
-            anything here you would not want a stranger to read.
-          </span>
-          <textarea id="engraving" name="engraving" maxlength="500"
-                    aria-describedby="engraving-hint">{{ form.engraving or '' }}</textarea>
-        </div>
-
-        <div class="field">
-          <label for="message">Anything else</label>
-          <span class="field__hint" id="message-hint">Sizing, accessibility needs, questions - anything you want us to know.</span>
-          <textarea id="message" name="message" maxlength="2000"
-                    aria-describedby="message-hint">{{ form.message or '' }}</textarea>
-        </div>
-      </fieldset>
-
-      <div class="honeypot" aria-hidden="true">
-        <label for="website">Leave this field empty</label>
-        <input type="text" id="website" name="website" tabindex="-1" autocomplete="off">
-      </div>
-
-      <div class="form-actions">
-        <button type="submit" class="btn btn--primary">Send request</button>
-        <span class="faint">Stored encrypted. Read only by us, only to fulfil your request.</span>
-      </div>
-    </form>
+    <div class="btn-row mt-lg">
+      <a class="btn btn--primary" href="{{ url_for('auth.register') }}">Create an account</a>
+      <a class="btn btn--ghost" href="{{ url_for('auth.login') }}">Sign in</a>
+    </div>
 
     <p class="faint mt-md">
-      <a href="{{ url_for('main.privacy') }}">How we handle what you send us</a>
+      <a href="{{ url_for('main.privacy') }}">How we handle what you store</a>
     </p>
   </div>
 </section>

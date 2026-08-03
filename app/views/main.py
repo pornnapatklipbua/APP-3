@@ -8,7 +8,7 @@ from flask import Blueprint, flash, g, redirect, render_template, request, url_f
 from ..extensions import db
 from ..mailer import send_tag_request_notification
 from ..models import EmergencyAccess, EmergencyCard, EpilepsyProfile, TagRequest, User
-from ..security import admin_required, blind_index, rate_limit
+from ..security import admin_required, blind_index, login_required, rate_limit
 
 bp = Blueprint("main", __name__)
 
@@ -43,60 +43,68 @@ def first_aid():
     return render_template("first_aid.html")
 
 
-@bp.route("/request-a-tag", methods=["GET", "POST"])
-@rate_limit(max_requests=5, window_seconds=900)
+@bp.route("/request-a-tag")
 def request_tag():
-    form = {}
-    if request.method == "POST":
-        form = {
-            "full_name": _clean("full_name", 200),
-            "email": _clean("email", 320),
-            "phone": _clean("phone", 60),
-            "postal_address": _clean("postal_address"),
-            "tag_style": _clean("tag_style", 100),
-            "engraving": _clean("engraving", 500),
-            "message": _clean("message"),
-        }
+    """Entry point for the "Request a tag" links across the site.
 
-        errors = []
-        if not form["full_name"]:
-            errors.append("Please tell us your name.")
-        if not form["email"] or "@" not in form["email"] or " " in form["email"]:
-            errors.append("Please give an email address we can reply to.")
-        if not form["postal_address"]:
-            errors.append("Please give an address we can post the tag to.")
-        if form["tag_style"] and form["tag_style"] not in TAG_STYLES:
-            errors.append("Please choose one of the listed tag styles.")
-        # Honeypot: a field hidden from people, irresistible to bots.
-        if (request.form.get("website") or "").strip():
-            errors.append("Please try again.")
-
-        if errors:
-            for message in errors:
-                flash(message, "error")
-        else:
-            tag_request = TagRequest(
-                user_id=g.user.id if g.get("user") else None,
-                full_name=form["full_name"],
-                email=form["email"],
-                phone=form["phone"],
-                postal_address=form["postal_address"],
-                tag_style=form["tag_style"],
-                engraving=form["engraving"],
-                message=form["message"],
-            )
-            db.session.add(tag_request)
-            db.session.commit()
-
-            send_tag_request_notification(tag_request)
-            return redirect(url_for("main.request_tag_sent"))
-
-    return render_template("request_tag.html", form=form, tag_styles=TAG_STYLES)
+    The form itself lives on the signed-in record page, so someone can read
+    their information, edit it and order a tag without moving between pages.
+    Signed-out visitors get an explanation of why an account is needed rather
+    than a bare redirect to the sign-in form.
+    """
+    if g.get("user"):
+        return redirect(url_for("records.my_information", _anchor="request-a-tag"))
+    return render_template("request_tag.html")
 
 
-@bp.route("/request-a-tag/sent")
-def request_tag_sent():
-    return render_template("request_tag_sent.html")
+@bp.route("/my-information/request-a-tag", methods=["POST"])
+@login_required
+@rate_limit(max_requests=5, window_seconds=900, methods=("POST",))
+def submit_tag_request():
+    """Handle the tag request form embedded in the record page.
+
+    Name and email are deliberately not asked for -- they are on the account,
+    which is also what ties this request to the emergency link that gets
+    written onto the finished tag.
+    """
+    postal_address = _clean("postal_address")
+    tag_style = _clean("tag_style", 100)
+    engraving = _clean("engraving", 500)
+    message = _clean("message")
+    wants_qr = bool(request.form.get("wants_qr"))
+
+    errors = []
+    if not postal_address:
+        errors.append("Please give an address we can post the tag to.")
+    if tag_style and tag_style not in TAG_STYLES:
+        errors.append("Please choose one of the listed tag styles.")
+    # Honeypot: a field hidden from people, irresistible to bots.
+    if (request.form.get("website") or "").strip():
+        errors.append("Please try again.")
+
+    if errors:
+        for problem in errors:
+            flash(problem, "error")
+        return redirect(url_for("records.my_information", _anchor="request-a-tag"))
+
+    tag_request = TagRequest(
+        user_id=g.user.id,
+        postal_address=postal_address,
+        tag_style=tag_style,
+        engraving=engraving,
+        message=message,
+        wants_qr=wants_qr,
+    )
+    db.session.add(tag_request)
+    db.session.commit()
+
+    send_tag_request_notification(tag_request)
+    flash(
+        "Your tag request has been sent. We read every one ourselves and will "
+        "reply by email, usually within a few days.",
+        "success",
+    )
+    return redirect(url_for("records.my_information", _anchor="request-a-tag"))
 
 
 @bp.route("/privacy")

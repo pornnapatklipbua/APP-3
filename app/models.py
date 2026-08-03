@@ -463,7 +463,13 @@ class EmergencyAccess(db.Model):
 
 
 class TagRequest(db.Model):
-    """A request to the site host for a physical epilepsy tag."""
+    """A request to the site host for a physical epilepsy tag.
+
+    Requesting requires an account. The name and email live on the ``User``
+    rather than being asked for again here: without them a request can be
+    neither replied to nor fulfilled, and an account is what ties the request
+    to the emergency link that gets written onto the tag.
+    """
 
     __tablename__ = "tag_requests"
 
@@ -472,15 +478,31 @@ class TagRequest(db.Model):
         sa.ForeignKey("users.id", ondelete="SET NULL"), index=True
     )
 
+    # Kept so requests submitted before sign-in was required stay readable.
+    # New requests leave these null and read the account instead.
     full_name: Mapped[str | None] = mapped_column(EncryptedText)
     email: Mapped[str | None] = mapped_column(EncryptedText)
     phone: Mapped[str | None] = mapped_column(EncryptedText)
+
     postal_address: Mapped[str | None] = mapped_column(EncryptedText)
     tag_style: Mapped[str | None] = mapped_column(EncryptedText)
     engraving: Mapped[str | None] = mapped_column(EncryptedText)
     message: Mapped[str | None] = mapped_column(EncryptedText)
 
+    # A preference about the physical object, not health information or
+    # anything identifying, so it is stored plainly and stays queryable.
+    wants_qr: Mapped[bool] = mapped_column(sa.Boolean, default=False, nullable=False)
+
     status: Mapped[str] = mapped_column(sa.String(32), default="new", index=True)
     created_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), default=_utcnow)
 
     user: Mapped[User | None] = relationship(back_populates="tag_requests")
+
+    @property
+    def contact_name(self) -> str | None:
+        """Account username, falling back to a legacy request's typed name."""
+        return self.user.username if self.user else self.full_name
+
+    @property
+    def contact_email(self) -> str | None:
+        return self.user.email if self.user else self.email

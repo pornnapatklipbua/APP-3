@@ -453,47 +453,106 @@ def main() -> int:
 
     print("\nTag requests")
     clear_limits()
-    tagger = app.test_client()
-    response = tagger.post(
-        "/request-a-tag",
-        data={
-            "csrf_token": token_for(tagger, "/request-a-tag"),
-            "full_name": "Sam Okafor",
-            "email": "sam@example.com",
-            "postal_address": "12 Elm Row\nEdinburgh\nEH7 4AA",
-            "tag_style": "Bracelet - stainless steel",
-        },
-        follow_redirects=True,
-    )
-    check("Tag request accepted", response.status_code == 200)
-    with app.app_context():
-        stored = db.session.scalar(db.select(TagRequest))
-        check("Tag request decrypts correctly", stored is not None and stored.full_name == "Sam Okafor")
-        raw_tag = db.session.execute(db.text("SELECT postal_address FROM tag_requests")).first()
-        check("Tag address encrypted at rest", "Elm Row" not in str(raw_tag[0]))
 
-    # A second request, made while signed in, is the one that can be fulfilled.
+    # Signed out: the standalone page explains why an account is needed, and
+    # the form is not there to submit.
+    stranger = app.test_client()
+    response = stranger.get("/request-a-tag")
+    check("Signed-out visitor sees the explainer", response.status_code == 200)
+    body = response.get_data(as_text=True)
+    check("Explainer asks them to register", "Create an account" in body)
+    check("Explainer carries no address field", 'name="postal_address"' not in body)
+    check(
+        "Signed-out submission is refused",
+        stranger.post(
+            "/my-information/request-a-tag",
+            data={"csrf_token": token_for(stranger, "/sign-in"), "postal_address": "nowhere"},
+        ).status_code
+        in (302, 400),
+    )
+
+    # Signed in: /request-a-tag hands off to the form on the record page.
+    response = client.get("/request-a-tag")
+    check(
+        "Signed-in visitor is sent to the record page",
+        response.status_code == 302 and "/my-information" in response.headers.get("Location", ""),
+        f"got {response.status_code}",
+    )
+
+    response = client.get("/my-information")
+    body = response.get_data(as_text=True)
+    check("Record page carries the tag form", 'id="request-a-tag"' in body)
+    check("Form asks for a delivery address", 'name="postal_address"' in body)
+    check("Form offers the QR option", 'name="wants_qr"' in body)
+    check("Form no longer asks for a name", 'name="full_name"' not in body)
+    check("Form no longer asks for an email", 'name="email"' not in body)
+    check("Form no longer asks for a phone", 'name="phone"' not in body)
+
     # A dedicated account, so this does not leave the sam.okafor account (used
     # heavily below, including in the "no card exists yet" assertions further
     # down) holding a card it did not ask for.
     requester = app.test_client()
     register(requester, "requester", "requester@example.com", GOOD_PASSWORD)
     response = requester.post(
-        "/request-a-tag",
+        "/my-information/request-a-tag",
         data={
-            "csrf_token": token_for(requester, "/request-a-tag"),
-            "full_name": "Priya Nair",
-            "email": "requester@example.com",
+            "csrf_token": token_for(requester, "/my-information"),
             "postal_address": "9 Dock Lane\nGlasgow\nG1 1AA",
             "tag_style": "Wallet card",
+            "wants_qr": "yes",
         },
         follow_redirects=True,
     )
+    check("Tag request accepted", response.status_code == 200)
+    check("Confirmation is shown in place", "has been sent" in response.get_data(as_text=True))
+
     with app.app_context():
         signed_in_request = db.session.scalar(
             db.select(TagRequest).filter(TagRequest.user_id.is_not(None))
         )
         signed_in_request_id = signed_in_request.id
+        check("Request is linked to the account", signed_in_request.user_id is not None)
+        check("QR preference stored", signed_in_request.wants_qr is True)
+        check(
+            "Name and email read through to the account",
+            signed_in_request.contact_name == "requester"
+            and signed_in_request.contact_email == "requester@example.com",
+        )
+        raw_tag = db.session.execute(db.text("SELECT postal_address FROM tag_requests")).first()
+        check("Tag address encrypted at rest", "Dock Lane" not in str(raw_tag[0]))
+
+    # Unticking the box has to actually persist as False, not silently default.
+    noqr = app.test_client()
+    register(noqr, "noqr", "noqr@example.com", GOOD_PASSWORD)
+    noqr.post(
+        "/my-information/request-a-tag",
+        data={
+            "csrf_token": token_for(noqr, "/my-information"),
+            "postal_address": "1 Plain Street\nDundee\nDD1 1AA",
+        },
+        follow_redirects=True,
+    )
+    with app.app_context():
+        noqr_user_id = db.session.scalar(
+            db.select(User.id).filter_by(username_lookup=_bi(app, "noqr"))
+        )
+        noqr_request = db.session.scalar(
+            db.select(TagRequest).filter_by(user_id=noqr_user_id)
+        )
+        check("Unticked QR box stores False", noqr_request is not None and noqr_request.wants_qr is False)
+
+    # An address is the only required field now.
+    blank = app.test_client()
+    register(blank, "blankaddr", "blankaddr@example.com", GOOD_PASSWORD)
+    response = blank.post(
+        "/my-information/request-a-tag",
+        data={"csrf_token": token_for(blank, "/my-information"), "postal_address": "  "},
+        follow_redirects=True,
+    )
+    check(
+        "Missing address is rejected",
+        "address we can post the tag to" in response.get_data(as_text=True),
+    )
 
     print("\nAdmin gating")
     clear_limits()
@@ -502,7 +561,9 @@ def main() -> int:
     register(host, "thehost", "host@example.com", GOOD_PASSWORD)
     response = host.get("/admin/tag-requests")
     check("Admin can read requests", response.status_code == 200, f"got {response.status_code}")
-    check("Admin sees decrypted request", "Priya Nair" in response.get_data(as_text=True))
+    check("Admin sees decrypted request", "9 Dock Lane" in response.get_data(as_text=True))
+    check("Admin sees the account behind the request", "requester" in response.get_data(as_text=True))
+    check("Admin sees the QR preference", "printed QR" in response.get_data(as_text=True))
     check("Reveal button offered for a signed-in request", "Reveal link" in response.get_data(as_text=True))
 
     print("\nAdmin fulfilment: revealing an emergency link")
@@ -553,27 +614,44 @@ def main() -> int:
         in (302, 404),
     )
 
+    # The form now requires sign-in, so an unlinked request can no longer be
+    # created through the site -- but rows from before that change still exist
+    # in production, and the guard against revealing them has to keep working.
     with app.app_context():
-        anon_request_id = db.session.scalar(
-            db.select(TagRequest.id).filter(TagRequest.user_id.is_(None)).limit(1)
+        legacy = TagRequest(
+            user_id=None,
+            full_name="Legacy Requester",
+            email="legacy@example.com",
+            postal_address="4 Old Road\nAberdeen\nAB1 1AA",
         )
+        db.session.add(legacy)
+        db.session.commit()
+        anon_request_id = legacy.id
+        cards_before = db.session.scalar(
+            db.select(db.func.count()).select_from(EmergencyCard)
+        )
+
     response = host.post(
         f"/admin/tag-requests/{anon_request_id}/reveal-emergency-link",
         data={"csrf_token": token_for(host, "/admin/tag-requests")},
         follow_redirects=True,
     )
     check(
-        "Anonymous request cannot be revealed",
+        "Legacy unlinked request cannot be revealed",
         "not submitted while signed in" in response.get_data(as_text=True),
     )
+    check(
+        "Legacy request still shows its typed-in name",
+        "Legacy Requester" in host.get("/admin/tag-requests").get_data(as_text=True),
+    )
     with app.app_context():
-        no_stray_card = db.session.scalar(
+        cards_after = db.session.scalar(
             db.select(db.func.count()).select_from(EmergencyCard)
         )
     check(
-        "No card was created for the anonymous request",
-        no_stray_card == 1,
-        f"{no_stray_card} cards total",
+        "No card was created for the unlinked request",
+        cards_after == cards_before,
+        f"{cards_before} -> {cards_after}",
     )
 
     print("\nEmergency links directory")

@@ -96,8 +96,8 @@ def send_tag_request_notification(request_obj) -> bool:
     message["Subject"] = f"New epilepsy tag request (#{request_obj.id})"
     message["From"] = cfg.get("SMTP_FROM") or cfg["SMTP_USERNAME"]
     message["To"] = cfg["CONTACT_EMAIL"]
-    if request_obj.email:
-        message["Reply-To"] = request_obj.email
+    if request_obj.contact_email:
+        message["Reply-To"] = request_obj.contact_email
 
     message.set_content(
         "\n".join(
@@ -105,10 +105,10 @@ def send_tag_request_notification(request_obj) -> bool:
                 f"Request #{request_obj.id}",
                 f"Received: {request_obj.created_at:%d %B %Y, %H:%M UTC}",
                 "",
-                f"Name:      {request_obj.full_name or '-'}",
-                f"Email:     {request_obj.email or '-'}",
-                f"Phone:     {request_obj.phone or '-'}",
+                f"Account:   {request_obj.contact_name or '-'}",
+                f"Email:     {request_obj.contact_email or '-'}",
                 f"Style:     {request_obj.tag_style or '-'}",
+                f"QR code:   {'yes - print alongside the NFC chip' if request_obj.wants_qr else 'no - NFC only'}",
                 "",
                 "Delivery address:",
                 request_obj.postal_address or "-",
@@ -118,6 +118,8 @@ def send_tag_request_notification(request_obj) -> bool:
                 "",
                 "Message:",
                 request_obj.message or "-",
+                "",
+                "Write the emergency link onto the tag from /admin/tag-requests.",
             ]
         )
     )

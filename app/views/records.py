@@ -23,7 +23,7 @@ from flask import (
 )
 
 from ..extensions import db
-from ..models import EmergencyCard, EpilepsyProfile
+from ..models import EmergencyCard, EpilepsyProfile, TagRequest
 from ..security import login_required
 
 bp = Blueprint("records", __name__)
@@ -42,12 +42,24 @@ def _own_card() -> EmergencyCard | None:
 @bp.route("/my-information")
 @login_required
 def my_information():
-    """Read-only view of nothing but this user's own epilepsy information."""
+    """Read-only view of this user's own epilepsy information, plus the tag
+    request form -- so reading, editing and ordering all happen in one place."""
+    from .main import TAG_STYLES
+
     profile = _own_profile()
+    tag_requests = db.session.scalars(
+        db.select(TagRequest)
+        .filter_by(user_id=g.user.id)
+        .order_by(TagRequest.created_at.desc())
+        .limit(5)
+    ).all()
+
     return render_template(
         "records/my_information.html",
         profile=profile,
         sections=EpilepsyProfile.SECTIONS,
+        tag_styles=TAG_STYLES,
+        tag_requests=tag_requests,
     )
 
 

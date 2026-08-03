@@ -5,12 +5,15 @@ the information that matters when they cannot explain it themselves.
 
 - **Awareness** — what epilepsy is, what seizures actually look like, and
   seizure first aid ("Stay. Safe. Side.").
-- **Request a tag** — a form that sends a request to the site host for a
-  physical epilepsy tag (bracelet, necklace, shoe tag, wallet card).
+- **Request a tag** — asks the site host for a physical epilepsy tag
+  (bracelet, necklace, shoe tag, wallet card), optionally with a printed QR
+  code alongside the NFC chip.
 - **Your record** — create an account and store seizure types, triggers,
   warning signs, first-aid instructions, medication and emergency contacts.
-- **`/my-information`** — a separate, read-only page showing nothing but the
-  signed-in user's own information. Print-friendly, and downloadable.
+- **`/my-information`** — a read-only page showing nothing but the signed-in
+  user's own information, with the tag request form embedded below it so
+  reading, editing and ordering all happen in one place. Print-friendly, and
+  downloadable.
 - **Emergency tag** — an NFC tag (or printed QR code) that shows a responder the
   wearer's epilepsy information with no sign-in, at the moment they cannot
   explain it themselves.
@@ -278,14 +281,32 @@ gets a 404 there.
 
 ## Tag requests
 
+The form lives on `/my-information`, below the user's own record, and **requires
+an account**. It asks only for a delivery address and the tag options — name and
+email come from the account rather than being typed again. That is not just
+fewer fields: without an account there is no way to reply to a request, and no
+card to link it to, so the "Reveal link" fulfilment step below could never work.
+`/request-a-tag` remains as the entry point every other page links to; signed-in
+visitors are sent to the form, signed-out ones get an explanation of why an
+account is needed.
+
+`wants_qr` records whether to print a QR code alongside the NFC chip. Every tag
+carries the chip; the QR is a backup for phones that will not read NFC, and it
+defaults to on.
+
 Submitted requests are stored encrypted and listed at **`/admin/tag-requests`**,
 readable only by the accounts in `ADMIN_EMAILS` (anyone else gets a 404, so the
 page's existence is not advertised). Each can be marked *new*, *in-progress*,
 *sent* or *closed*.
 
 If SMTP is configured, a notification is also emailed to `CONTACT_EMAIL` with
-the visitor's address in `Reply-To`. Email is best-effort — a request is written
-to the database before any mail is attempted, so an SMTP outage never loses one.
+the requester's address in `Reply-To`. Email is best-effort — a request is
+written to the database before any mail is attempted, so an SMTP outage never
+loses one.
+
+Requests submitted before sign-in was required have no linked account. They stay
+readable (the old typed-in name and email are still stored and displayed), but
+they cannot be fulfilled through **Reveal link** — there is no card to reveal.
 
 ---
 

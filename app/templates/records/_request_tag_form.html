@@ -1,0 +1,114 @@
+{# The tag request form, embedded in the record page so reading, editing and
+   ordering all happen without leaving the page. Included, not extended, so
+   the standalone /request-a-tag route can stay a signed-out explainer. #}
+
+<hr class="no-print">
+
+<section id="request-a-tag" class="no-print">
+  <p class="eyebrow">Request a tag</p>
+  <h2>Ask us to send you a physical tag.</h2>
+  <p class="muted">
+    A bracelet, necklace, shoe tag or wallet card that tells a stranger or a
+    paramedic what is happening and who to call, at the moment you cannot tell
+    them yourself. We read every request ourselves and reply by email, usually
+    within a few days.
+  </p>
+
+  {% if profile is none or profile.is_empty() %}
+    <div class="note note--amber mt-md">
+      <strong>Worth writing your information down first.</strong> A tag points
+      at your record, so a tag made today would show a responder nothing about
+      you. You can still order one &mdash; just fill your details in before it
+      arrives.
+    </div>
+  {% endif %}
+
+  {% if tag_requests %}
+    <div class="note mt-md">
+      {% if tag_requests|length == 1 %}
+        You have one request open, sent
+        {{ tag_requests[0].created_at.strftime('%d %B %Y') }} &mdash;
+        currently <strong>{{ tag_requests[0].status }}</strong>.
+      {% else %}
+        You have {{ tag_requests|length }} requests on record. The most recent
+        was sent {{ tag_requests[0].created_at.strftime('%d %B %Y') }} and is
+        currently <strong>{{ tag_requests[0].status }}</strong>.
+      {% endif %}
+      There is no need to send another unless something has changed.
+    </div>
+  {% endif %}
+
+  <form method="post" action="{{ url_for('main.submit_tag_request') }}" class="panel mt-md" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <fieldset>
+      <legend>Where to send it</legend>
+      <p class="fieldset__intro">
+        We already have your name and email from your account &mdash; we only
+        need to know where to post it.
+      </p>
+
+      <div class="field">
+        <label for="postal_address">Delivery address <span class="required" aria-hidden="true">*</span></label>
+        <span class="field__hint" id="address-hint">Include the postcode and country.</span>
+        <textarea id="postal_address" name="postal_address" maxlength="2000" required
+                  aria-describedby="address-hint" autocomplete="street-address"></textarea>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>The tag itself</legend>
+      <p class="fieldset__intro">If you are not sure, leave these and we will talk it through with you.</p>
+
+      <div class="field">
+        <label for="tag_style">Preferred style</label>
+        <select id="tag_style" name="tag_style">
+          <option value="">No preference</option>
+          {% for style in tag_styles %}
+            <option value="{{ style }}">{{ style }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="wants_qr" class="checkbox-row">
+          <input type="checkbox" id="wants_qr" name="wants_qr" value="yes" checked>
+          <span>Print a QR code on the tag as well</span>
+        </label>
+        <span class="field__hint" id="qr-hint">
+          The tag carries an NFC chip either way. A printed QR code beside it is
+          a backup for anyone whose phone will not read NFC, or who does not
+          think to tap &mdash; recommended, but it does take up space on a small tag.
+        </span>
+      </div>
+
+      <div class="field">
+        <label for="engraving">What it should say</label>
+        <span class="field__hint" id="engraving-hint">
+          Space is limited, so keep it to essentials - for example:
+          "EPILEPSY - see wallet card - ICE 07700 900123". Please do not put
+          anything here you would not want a stranger to read.
+        </span>
+        <textarea id="engraving" name="engraving" maxlength="500"
+                  aria-describedby="engraving-hint"></textarea>
+      </div>
+
+      <div class="field">
+        <label for="message">Anything else</label>
+        <span class="field__hint" id="message-hint">Sizing, accessibility needs, questions - anything you want us to know.</span>
+        <textarea id="message" name="message" maxlength="2000"
+                  aria-describedby="message-hint"></textarea>
+      </div>
+    </fieldset>
+
+    <div class="honeypot" aria-hidden="true">
+      <label for="website">Leave this field empty</label>
+      <input type="text" id="website" name="website" tabindex="-1" autocomplete="off">
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn--primary">Send request</button>
+      <span class="faint">Stored encrypted. Read only by us, only to fulfil your request.</span>
+    </div>
+  </form>
+</section>
