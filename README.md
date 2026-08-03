@@ -1,4 +1,5 @@
 # Seizure66
+<<<<<<< HEAD
 
 An epilepsy awareness site with a private, encrypted place for people to keep
 the information that matters when they cannot explain it themselves.
@@ -365,3 +366,5 @@ Auraline stores what a person chooses to write down and shows it back to them.
 It is not monitored, it gives no medical advice, and it cannot summon help.
 Those limits are stated plainly on the site itself.
 # seizure
+=======
+>>>>>>> 18b7920eb3842a813f73da56895d5ab96f4f1601
