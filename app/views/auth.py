@@ -28,6 +28,7 @@ from flask import (
 )
 
 from ..extensions import db
+from ..i18n import bilingual, lurl_for, render_localised
 from ..mailer import send_password_reset
 from ..models import PasswordResetToken, User
 from ..security import (
@@ -61,10 +62,10 @@ def _utcnow() -> datetime:
 def _safe_next(candidate: str | None) -> str:
     """Only ever redirect to a path on this site."""
     if not candidate:
-        return url_for("records.my_information")
+        return lurl_for("records.my_information")
     parsed = urlparse(candidate)
     if parsed.scheme or parsed.netloc or not candidate.startswith("/") or candidate.startswith("//"):
-        return url_for("records.my_information")
+        return lurl_for("records.my_information")
     return candidate
 
 
@@ -86,11 +87,11 @@ def _start_session(user: User, destination: str, message: str | None = None):
 # ---------------------------------------------------------------------------
 
 
-@bp.route("/create-account", methods=["GET", "POST"])
+@bilingual(bp, "/create-account", methods=["GET", "POST"])
 @rate_limit(max_requests=5, window_seconds=900, methods=("POST",))
 def register():
     if g.get("user"):
-        return redirect(url_for("records.my_information"))
+        return redirect(lurl_for("records.my_information"))
 
     form = {"username": "", "email": ""}
 
@@ -151,7 +152,7 @@ def register():
         for message in errors:
             flash(message, "error")
 
-    return render_template(
+    return render_localised(
         "auth/register.html",
         form=form,
         min_length=MIN_PASSWORD_LENGTH,
@@ -164,11 +165,11 @@ def register():
 # ---------------------------------------------------------------------------
 
 
-@bp.route("/sign-in", methods=["GET", "POST"])
+@bilingual(bp, "/sign-in", methods=["GET", "POST"])
 @rate_limit(max_requests=10, window_seconds=900, methods=("POST",))
 def login():
     if g.get("user"):
-        return redirect(url_for("records.my_information"))
+        return redirect(lurl_for("records.my_information"))
 
     username = ""
 
@@ -192,7 +193,7 @@ def login():
                 f"minute{'' if minutes == 1 else 's'}, or reset your password.",
                 "error",
             )
-            return render_template("auth/sign_in.html", username=username)
+            return render_localised("auth/sign_in.html", username=username)
 
         # Runs even when `user` is None, against a dummy hash, so a missing
         # account is not measurably faster to reject than a wrong password.
@@ -216,14 +217,14 @@ def login():
 
         flash(BAD_CREDENTIALS, "error")
 
-    return render_template("auth/sign_in.html", username=username)
+    return render_localised("auth/sign_in.html", username=username)
 
 
-@bp.route("/sign-out", methods=["POST"])
+@bilingual(bp, "/sign-out", methods=["POST"])
 def logout():
     session.clear()
     flash("You have been signed out.", "info")
-    return redirect(url_for("main.index"))
+    return redirect(lurl_for("main.index"))
 
 
 # ---------------------------------------------------------------------------
@@ -231,17 +232,17 @@ def logout():
 # ---------------------------------------------------------------------------
 
 
-@bp.route("/account")
+@bilingual(bp, "/account")
 @login_required
 def account():
-    return render_template(
+    return render_localised(
         "auth/account.html",
         min_length=MIN_PASSWORD_LENGTH,
         max_length=MAX_PASSWORD_LENGTH,
     )
 
 
-@bp.route("/account/password", methods=["POST"])
+@bilingual(bp, "/account/password", methods=["POST"])
 @login_required
 @rate_limit(max_requests=10, window_seconds=900, methods=("POST",))
 def change_password():
@@ -265,7 +266,7 @@ def change_password():
     if errors:
         for message in errors:
             flash(message, "error")
-        return redirect(url_for("auth.account"))
+        return redirect(lurl_for("auth.account"))
 
     user.password_hash = hash_password(new)
     user.password_changed_at = _utcnow()
@@ -278,10 +279,10 @@ def change_password():
     session["epoch"] = user.session_epoch
 
     flash("Your password has been changed. Any other devices have been signed out.", "success")
-    return redirect(url_for("auth.account"))
+    return redirect(lurl_for("auth.account"))
 
 
-@bp.route("/account/delete", methods=["POST"])
+@bilingual(bp, "/account/delete", methods=["POST"])
 @login_required
 def delete_account():
     user = g.user
@@ -290,14 +291,14 @@ def delete_account():
     is_valid, _ = verify_password(user.password_hash, password)
     if not is_valid:
         flash("Please enter your current password to delete your account.", "error")
-        return redirect(url_for("auth.account"))
+        return redirect(lurl_for("auth.account"))
 
     db.session.delete(user)  # cascades to the record and reset tokens
     db.session.commit()
     session.clear()
 
     flash("Your account and everything stored with it have been deleted.", "success")
-    return redirect(url_for("main.index"))
+    return redirect(lurl_for("main.index"))
 
 
 # ---------------------------------------------------------------------------
@@ -312,7 +313,7 @@ def _invalidate_reset_tokens(user: User) -> None:
             token.used_at = now
 
 
-@bp.route("/forgot-password", methods=["GET", "POST"])
+@bilingual(bp, "/forgot-password", methods=["GET", "POST"])
 @rate_limit(max_requests=5, window_seconds=900, methods=("POST",))
 def forgot_password():
     if request.method == "POST":
@@ -337,22 +338,26 @@ def forgot_password():
                 send_password_reset(
                     to_email=user.email,
                     username=user.username,
-                    reset_url=url_for("auth.reset_password", token=raw_token, _external=True),
+                    # Language-aware: someone who asked from the Thai page gets
+                    # a link back into the Thai page.
+                    reset_url=lurl_for(
+                        "auth.reset_password", token=raw_token, _external=True
+                    ),
                 )
 
         # Identical response either way, so this page cannot be used to discover
         # which addresses are registered.
-        return redirect(url_for("auth.forgot_password_sent"))
+        return redirect(lurl_for("auth.forgot_password_sent"))
 
-    return render_template("auth/forgot_password.html")
+    return render_localised("auth/forgot_password.html")
 
 
-@bp.route("/forgot-password/sent")
+@bilingual(bp, "/forgot-password/sent")
 def forgot_password_sent():
-    return render_template("auth/forgot_password_sent.html")
+    return render_localised("auth/forgot_password_sent.html")
 
 
-@bp.route("/reset-password/<token>", methods=["GET", "POST"])
+@bilingual(bp, "/reset-password/<token>", methods=["GET", "POST"])
 @rate_limit(max_requests=10, window_seconds=900)
 def reset_password(token: str):
     record = db.session.scalar(
@@ -365,7 +370,7 @@ def reset_password(token: str):
             "Please request a new one.",
             "error",
         )
-        return redirect(url_for("auth.forgot_password"))
+        return redirect(lurl_for("auth.forgot_password"))
 
     user = record.user
 
@@ -381,7 +386,7 @@ def reset_password(token: str):
         if errors:
             for message in errors:
                 flash(message, "error")
-            return render_template(
+            return render_localised(
                 "auth/reset_password.html",
                 token=token,
                 min_length=MIN_PASSWORD_LENGTH,
@@ -398,9 +403,9 @@ def reset_password(token: str):
         db.session.commit()
 
         flash("Your password has been reset. You can sign in now.", "success")
-        return redirect(url_for("auth.login"))
+        return redirect(lurl_for("auth.login"))
 
-    return render_template(
+    return render_localised(
         "auth/reset_password.html",
         token=token,
         min_length=MIN_PASSWORD_LENGTH,

@@ -1,0 +1,10 @@
+{# Union Jack, simplified for icon sizes: the red diagonals are drawn centred
+   rather than counterchanged, which is invisible below about 40px and avoids
+   clipPath ids that would collide when the flag appears twice on a page. #}
+<svg class="flag" viewBox="0 0 60 40" width="21" height="14" aria-hidden="true" focusable="false" role="img">
+  <rect width="60" height="40" fill="#012169"/>
+  <path d="M0,0 L60,40 M60,0 L0,40" stroke="#ffffff" stroke-width="8"/>
+  <path d="M0,0 L60,40 M60,0 L0,40" stroke="#c8102e" stroke-width="4"/>
+  <path d="M30,0 V40 M0,20 H60" stroke="#ffffff" stroke-width="13"/>
+  <path d="M30,0 V40 M0,20 H60" stroke="#c8102e" stroke-width="8"/>
+</svg>

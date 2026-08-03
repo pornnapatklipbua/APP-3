@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{#
+  ============================================================================
+  THAI LAYOUT  --  TRANSLATE THE TEXT IN THIS FILE
+  ============================================================================
+
+  Every Thai page extends this instead of base.html. It overrides only the two
+  blocks that contain wording -- the navigation and the footer -- so the page
+  skeleton, stylesheet, flash messages and language dropdown stay defined once
+  in base.html and are never duplicated.
+
+  The text below is English on purpose. Replace the words; leave the
+  url_for(...) targets alone, since those point at the Thai routes already.
+
+  Leave the url_for(...) calls alone. Inside a template they already
+  resolve to the Thai route where one exists, because the application
+  factory swaps in a language-aware url_for -- see app/i18n.py.
+  ============================================================================
+#}
+
+{% block sitenav %}
+  {# TRANSLATE: link labels only. #}
+  <a href="{{ url_for('main.about') }}" {% if request.endpoint == 'main.th_about' %}aria-current="page"{% endif %}>About epilepsy</a>
+  <a href="{{ url_for('main.first_aid') }}" {% if request.endpoint == 'main.th_first_aid' %}aria-current="page"{% endif %}>Seizure first aid</a>
+  <a href="{{ url_for('main.request_tag') }}" {% if request.endpoint == 'main.th_request_tag' %}aria-current="page"{% endif %}>Request a tag</a>
+
+  <span class="nav__divider" aria-hidden="true"></span>
+
+  {% if current_user %}
+    <a href="{{ url_for('records.my_information') }}" {% if request.blueprint == 'records' %}aria-current="page"{% endif %}>My information</a>
+    <a href="{{ url_for('auth.account') }}" {% if request.endpoint == 'auth.account' %}aria-current="page"{% endif %}>Account</a>
+    <form method="post" action="{{ url_for('auth.logout') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="linkbutton">Sign out</button>
+    </form>
+  {% else %}
+    <a href="{{ url_for('auth.login') }}">Sign in</a>
+    <a href="{{ url_for('auth.register') }}">Create account</a>
+  {% endif %}
+{% endblock %}
+
+
+{% block sitefooter %}
+  {# TRANSLATE: headings, link labels and the two colophon sentences. #}
+  <div class="site-footer__grid">
+    <div>
+      <h4>Seizure66</h4>
+      <p>Epilepsy awareness, and a private place to keep what matters when you cannot speak for yourself.</p>
+    </div>
+    <div>
+      <h4>Learn</h4>
+      <ul>
+        <li><a href="{{ url_for('main.about') }}">About epilepsy</a></li>
+        <li><a href="{{ url_for('main.first_aid') }}">Seizure first aid</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Your record</h4>
+      <ul>
+        <li><a href="{{ url_for('main.request_tag') }}">Request an epilepsy tag</a></li>
+        {% if current_user %}
+          <li><a href="{{ url_for('records.my_information') }}">My information</a></li>
+          <li><a href="{{ url_for('records.edit') }}">Edit my details</a></li>
+          <li><a href="{{ url_for('records.emergency') }}">My emergency tag</a></li>
+          <li><a href="{{ url_for('auth.account') }}">Account settings</a></li>
+        {% else %}
+          <li><a href="{{ url_for('auth.register') }}">Create an account</a></li>
+          <li><a href="{{ url_for('auth.login') }}">Sign in</a></li>
+        {% endif %}
+      </ul>
+    </div>
+    <div>
+      <h4>Small print</h4>
+      <ul>
+        <li><a href="{{ url_for('main.privacy') }}">Privacy &amp; your data</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="colophon">
+    <p>This is an awareness project. It is not a medical service and does not give medical advice.</p>
+    <p>In an emergency, call your local emergency number.</p>
+  </div>
+{% endblock %}

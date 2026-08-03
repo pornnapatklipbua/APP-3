@@ -1,0 +1,67 @@
+{% extends "th/base.html" %}
+{#
+  ============================================================================
+  THAI PAGE -- TRANSLATE THE TEXT, LEAVE THE MARKUP.
+  ============================================================================
+  A copy of records/edit.html with the wording still in English.
+
+  Replace the visible text only. Do not touch:
+    * url_for(...)      -- already resolves to the Thai route automatically
+    * name="..." / id   -- form fields the server reads by name
+    * class="..."       -- styling hooks
+    * {% ... %} logic   -- conditionals and loops
+  ============================================================================
+#}
+{% block title %}Edit my information - Auraline{% endblock %}
+
+{% block content %}
+<section class="section">
+  <div class="wrap wrap--narrow">
+    <p class="eyebrow">Edit</p>
+    <h1>Your epilepsy information</h1>
+    <p class="lede">
+      Every field is optional, and nothing here is ever shown to anyone but you.
+      Fill in what you know today and come back to the rest.
+    </p>
+
+    <div class="note mt-md">
+      Write it for a stranger. The person reading this may have met you ninety
+      seconds ago, and may be frightened. Plain, direct sentences help more than
+      clinical terms.
+    </div>
+
+    <form method="post" class="panel mt-lg" data-dirty-guard novalidate>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      {% for heading, blurb, fields in sections %}
+        <fieldset>
+          <legend>{{ heading }}</legend>
+          <p class="fieldset__intro">{{ blurb }}</p>
+
+          {% for name, label, kind, hint in fields %}
+            <div class="field">
+              <label for="{{ name }}">{{ label }}</label>
+              {% if hint %}<span class="field__hint" id="{{ name }}-hint">{{ hint }}</span>{% endif %}
+              {% if kind == 'textarea' %}
+                <textarea id="{{ name }}" name="{{ name }}" maxlength="4000"
+                          {% if hint %}aria-describedby="{{ name }}-hint"{% endif %}
+                          >{{ (profile[name] if profile else '') or '' }}</textarea>
+              {% else %}
+                <input type="text" id="{{ name }}" name="{{ name }}" maxlength="4000"
+                       {% if hint %}aria-describedby="{{ name }}-hint"{% endif %}
+                       value="{{ (profile[name] if profile else '') or '' }}">
+              {% endif %}
+            </div>
+          {% endfor %}
+        </fieldset>
+      {% endfor %}
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn--primary">Save my information</button>
+        <a class="btn btn--quiet" href="{{ url_for('records.my_information') }}">Cancel</a>
+        <span class="faint spacer">Encrypted before it is written to the database.</span>
+      </div>
+    </form>
+  </div>
+</section>
+{% endblock %}

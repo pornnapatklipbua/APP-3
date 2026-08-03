@@ -6,6 +6,7 @@ import sqlalchemy as sa
 from flask import Blueprint, flash, g, redirect, render_template, request, url_for
 
 from ..extensions import db
+from ..i18n import bilingual, lurl_for, render_localised
 from ..mailer import send_tag_request_notification
 from ..models import EmergencyAccess, EmergencyCard, EpilepsyProfile, TagRequest, User
 from ..security import admin_required, blind_index, login_required, rate_limit
@@ -28,22 +29,22 @@ def _clean(name: str, limit: int = MAX_FIELD) -> str:
     return (request.form.get(name) or "").strip()[:limit]
 
 
-@bp.route("/")
+@bilingual(bp, "/")
 def index():
-    return render_template("index.html")
+    return render_localised("index.html")
 
 
-@bp.route("/about-epilepsy")
+@bilingual(bp, "/about-epilepsy")
 def about():
-    return render_template("about.html")
+    return render_localised("about.html")
 
 
-@bp.route("/seizure-first-aid")
+@bilingual(bp, "/seizure-first-aid")
 def first_aid():
-    return render_template("first_aid.html")
+    return render_localised("first_aid.html")
 
 
-@bp.route("/request-a-tag")
+@bilingual(bp, "/request-a-tag")
 def request_tag():
     """Entry point for the "Request a tag" links across the site.
 
@@ -53,11 +54,11 @@ def request_tag():
     than a bare redirect to the sign-in form.
     """
     if g.get("user"):
-        return redirect(url_for("records.my_information", _anchor="request-a-tag"))
-    return render_template("request_tag.html")
+        return redirect(lurl_for("records.my_information", _anchor="request-a-tag"))
+    return render_localised("request_tag.html")
 
 
-@bp.route("/my-information/request-a-tag", methods=["POST"])
+@bilingual(bp, "/my-information/request-a-tag", methods=["POST"])
 @login_required
 @rate_limit(max_requests=5, window_seconds=900, methods=("POST",))
 def submit_tag_request():
@@ -85,7 +86,7 @@ def submit_tag_request():
     if errors:
         for problem in errors:
             flash(problem, "error")
-        return redirect(url_for("records.my_information", _anchor="request-a-tag"))
+        return redirect(lurl_for("records.my_information", _anchor="request-a-tag"))
 
     tag_request = TagRequest(
         user_id=g.user.id,
@@ -107,9 +108,9 @@ def submit_tag_request():
     return redirect(url_for("records.my_information", _anchor="request-a-tag"))
 
 
-@bp.route("/privacy")
+@bilingual(bp, "/privacy")
 def privacy():
-    return render_template("privacy.html")
+    return render_localised("privacy.html")
 
 
 @bp.route("/admin/tag-requests")

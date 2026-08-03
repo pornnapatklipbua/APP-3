@@ -1,0 +1,51 @@
+{% extends "th/base.html" %}
+{#
+  ============================================================================
+  THAI PAGE -- TRANSLATE THE TEXT, LEAVE THE MARKUP.
+  ============================================================================
+  A copy of auth/sign_in.html with the wording still in English.
+
+  Replace the visible text only. Do not touch:
+    * url_for(...)      -- already resolves to the Thai route automatically
+    * name="..." / id   -- form fields the server reads by name
+    * class="..."       -- styling hooks
+    * {% ... %} logic   -- conditionals and loops
+  ============================================================================
+#}
+{% block title %}Sign in - Auraline{% endblock %}
+
+{% block content %}
+<section class="wrap signin">
+  <div class="signin__head">
+    <p class="eyebrow">Sign in</p>
+    <h1>Welcome back.</h1>
+    <p class="muted">Your record, and only yours.</p>
+  </div>
+
+  <form method="post" class="panel" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="field">
+      <label for="username">Username</label>
+      <input type="text" id="username" name="username" maxlength="32" required
+             autocomplete="username" autocapitalize="none" autocorrect="off"
+             value="{{ username or '' }}" autofocus>
+    </div>
+
+    <div class="field">
+      <label for="password">
+        Password
+        <a class="inline-link" href="{{ url_for('auth.forgot_password') }}">Forgotten it?</a>
+      </label>
+      <input type="password" id="password" name="password" required
+             autocomplete="current-password">
+    </div>
+
+    <button type="submit" class="btn btn--primary btn--block">Sign in</button>
+  </form>
+
+  <p class="alt-action">
+    No account yet? <a href="{{ url_for('auth.register') }}">Create one</a>.
+  </p>
+</section>
+{% endblock %}

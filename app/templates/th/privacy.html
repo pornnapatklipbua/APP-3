@@ -1,0 +1,131 @@
+{% extends "th/base.html" %}
+{#
+  THAI PRIVACY PAGE -- TRANSLATE THE TEXT, LEAVE THE MARKUP.
+
+  Translate this one carefully and literally. It is the page that tells people
+  exactly who can see their medical information, including the one case where
+  the site host can. Do not soften or shorten those statements.
+#}
+{% block title %}Privacy and your data - Seizure66{% endblock %}
+
+{% block content %}
+<section class="section">
+  <div class="wrap wrap--narrow">
+    <p class="eyebrow">Privacy</p>
+    <h1>What we hold, and what we do with it.</h1>
+    <p class="lede">
+      Health information deserves to be handled carefully. This page describes
+      exactly what Seizure66 stores and how it is protected.
+    </p>
+
+    <hr>
+
+    <h2>What we store</h2>
+    <ul class="ticks">
+      <li><strong>Your account:</strong> a username, an email address for password resets, and a one-way hash of your password. Never the password itself - we could not tell you what it is, and neither could anyone who stole the database.</li>
+      <li><strong>Your epilepsy information:</strong> only what you type into the form yourself. Every field is optional.</li>
+      <li><strong>Tag requests:</strong> the delivery address and tag options you send us when you request a tag.</li>
+    </ul>
+
+    <h2>How it is protected</h2>
+    <ul class="ticks">
+      <li>Your epilepsy information and tag request details are <strong>encrypted before they are written to the database</strong>, with a key held separately from the data. A stolen database file or a leaked backup does not reveal your health information.</li>
+      <li>Your username and email address are encrypted too. On a site about epilepsy, the bare fact that an address has an account here says something about a person's health, so it is protected the same way.</li>
+      <li>Passwords are hashed with <strong>Argon2id</strong>, the current recommended algorithm, deliberately tuned to be slow and memory-hungry so that guessing at them in bulk is impractical even for someone holding the database.</li>
+      <li>All traffic is served over HTTPS.</li>
+      <li>Repeated wrong passwords slow the account down progressively, and a wrong username is rejected in exactly the same way and the same time as a wrong password - so this site cannot be used to work out who has an account here.</li>
+      <li>Changing or resetting your password signs out every other device.</li>
+      <li>Your record is retrieved only by your signed-in account identity. No page on this site accepts a record number from the address bar, so there is nothing to guess at or tamper with.</li>
+      <li>Session cookies are HTTP-only, same-site, and marked secure in production. Forms are protected against cross-site request forgery.</li>
+      <li>Pages showing your information are marked never to be stored in a shared cache.</li>
+    </ul>
+
+    <h2>Who can see your information</h2>
+    <p>
+      Your epilepsy record is visible to you and to nobody else. It is not
+      shared, not sold, not used for advertising, and not shown to other users.
+      There is no public link to it.
+    </p>
+
+    <h2>The emergency tag, and what it trades away</h2>
+    <p>
+      If you choose to set up an emergency tag, that is the one exception, and
+      it is worth being plain about it. A paramedic has no account here and no
+      time to make one, so <strong>anyone holding your tag link can read your
+      emergency information without a password</strong>. That is not a weakness
+      in the design; it is the design. A lock that a stranger cannot open is
+      useless in the situation the tag exists for.
+    </p>
+    <p>What that link is protected by instead:</p>
+    <ul class="ticks">
+      <li>The address contains 128 bits of randomness. It cannot be found by guessing, and it is not listed, linked or published anywhere.</li>
+      <li>The page sends no referrer, so opening it cannot leak the address to another site.</li>
+      <li>It is excluded from search engines by three separate mechanisms.</li>
+      <li>It is never cached, by your browser or anyone else's.</li>
+      <li>Wrong addresses are rate limited. Correct ones never are, so a real scan is never turned away.</li>
+      <li>You can switch the tag off at any moment, or issue a new address that retires the old one.</li>
+      <li>You can see when your card was opened. For an ordinary scan, we log that it happened, not who by.</li>
+    </ul>
+    <p>
+      Setting up a tag is entirely optional, and the rest of the site works
+      without one.
+    </p>
+
+    <div class="note note--amber mt-md">
+      <strong>One exception, and it is worth being direct about it.</strong>
+      The person who runs this site can look up any registered account and
+      reveal its emergency link &mdash; the one case where someone other than
+      you can see it. This exists so a physical tag can actually be written:
+      the exact link has to reach a human being at some point if you want us
+      to make one for you rather than printing your own QR code.
+    </div>
+    <p>What limits it:</p>
+    <ul class="ticks">
+      <li>It is never bulk-visible. There is no page listing everyone's tokens at once &mdash; each one is revealed individually, on a deliberate click.</li>
+      <li>It is never silent. Every reveal is written to <strong>your own</strong> account's access log, by name, the same list an ordinary tag scan appears in. You will always know if and when it happened.</li>
+      <li>It cannot see your epilepsy information itself &mdash; only the link. Medical fields stay unreadable to anyone but you, encrypted the same way regardless.</li>
+    </ul>
+    <p>
+      If you would rather nobody but you ever has this ability, do not use
+      "Request a tag" and instead set up your own tag and print your own QR
+      code from your account.
+    </p>
+
+    <h2>Your control</h2>
+    <ul class="ticks">
+      <li>Edit or overwrite anything you have stored, at any time.</li>
+      <li>Download a copy of everything you have stored, as a plain file.</li>
+      <li>Delete your entire record permanently, in one click, without asking anyone.</li>
+      <li>Delete your whole account, taking everything stored with it, from the <a href="{{ url_for('auth.account') }}">account page</a>.</li>
+    </ul>
+
+    <div class="note note--amber mt-md">
+      <strong>One consequence worth knowing.</strong> Because your information is
+      encrypted and your password is only ever stored as a hash, there is no
+      back door. If you lose your password and your email address no longer
+      works, nobody - including us - can recover what you stored. Keep the email
+      address on your account current.
+    </div>
+
+    <h2>What this site is not</h2>
+    <p>
+      Seizure66 is an awareness project and a private notebook. It is not a
+      medical service, it does not give medical advice, and it is not monitored.
+      It cannot summon help. In an emergency, call your local emergency number.
+    </p>
+
+    <div class="note mt-lg">
+      <strong>A note on honesty:</strong> no system is perfect. Store what would
+      genuinely help someone treating you, and think twice before adding
+      anything beyond that.
+    </div>
+
+    {% if current_user %}
+      <div class="btn-row mt-lg">
+        <a class="btn btn--ghost" href="{{ url_for('records.download') }}">Download my data</a>
+        <a class="btn btn--quiet" href="{{ url_for('records.my_information') }}">View my information</a>
+      </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

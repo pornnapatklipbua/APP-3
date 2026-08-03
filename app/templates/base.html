@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="{{ current_language }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -20,23 +20,29 @@
       </a>
 
       <nav class="nav" aria-label="Main">
-        <a href="{{ url_for('main.about') }}" {% if request.endpoint == 'main.about' %}aria-current="page"{% endif %}>About epilepsy</a>
-        <a href="{{ url_for('main.first_aid') }}" {% if request.endpoint == 'main.first_aid' %}aria-current="page"{% endif %}>Seizure first aid</a>
-        <a href="{{ url_for('main.request_tag') }}" {% if request.endpoint == 'main.request_tag' %}aria-current="page"{% endif %}>Request a tag</a>
+        {# th/base.html overrides this block with the Thai wording. #}
+        {% block sitenav %}
+          <a href="{{ url_for('main.about') }}" {% if request.endpoint == 'main.about' %}aria-current="page"{% endif %}>About epilepsy</a>
+          <a href="{{ url_for('main.first_aid') }}" {% if request.endpoint == 'main.first_aid' %}aria-current="page"{% endif %}>Seizure first aid</a>
+          <a href="{{ url_for('main.request_tag') }}" {% if request.endpoint == 'main.request_tag' %}aria-current="page"{% endif %}>Request a tag</a>
 
-        <span class="nav__divider" aria-hidden="true"></span>
+          <span class="nav__divider" aria-hidden="true"></span>
 
-        {% if current_user %}
-          <a href="{{ url_for('records.my_information') }}" {% if request.blueprint == 'records' %}aria-current="page"{% endif %}>My information</a>
-          <a href="{{ url_for('auth.account') }}" {% if request.endpoint == 'auth.account' %}aria-current="page"{% endif %}>Account</a>
-          <form method="post" action="{{ url_for('auth.logout') }}">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button type="submit" class="linkbutton">Sign out</button>
-          </form>
-        {% else %}
-          <a href="{{ url_for('auth.login') }}">Sign in</a>
-          <a href="{{ url_for('auth.register') }}">Create account</a>
-        {% endif %}
+          {% if current_user %}
+            <a href="{{ url_for('records.my_information') }}" {% if request.blueprint == 'records' %}aria-current="page"{% endif %}>My information</a>
+            <a href="{{ url_for('auth.account') }}" {% if request.endpoint == 'auth.account' %}aria-current="page"{% endif %}>Account</a>
+            <form method="post" action="{{ url_for('auth.logout') }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="linkbutton">Sign out</button>
+            </form>
+          {% else %}
+            <a href="{{ url_for('auth.login') }}">Sign in</a>
+            <a href="{{ url_for('auth.register') }}">Create account</a>
+          {% endif %}
+        {% endblock %}
+
+        {# Shared: flags need no translating. #}
+        {% include "partials/language_picker.html" %}
       </nav>
     </div>
   </header>
@@ -59,6 +65,8 @@
 
   <footer class="site-footer no-print">
     <div class="wrap">
+      {# th/base.html overrides this block with the Thai wording. #}
+      {% block sitefooter %}
       <div class="site-footer__grid">
         <div>
           <h4>Seizure66</h4>
@@ -98,6 +106,7 @@
         <p>This is an awareness project. It is not a medical service and does not give medical advice.</p>
         <p>In an emergency, call your local emergency number.</p>
       </div>
+      {% endblock %}
     </div>
   </footer>
 

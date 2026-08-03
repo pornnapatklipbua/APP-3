@@ -1,0 +1,7 @@
+{# Thai flag (ธงไตรรงค์): five bands, red-white-blue-white-red, the blue
+   centre band twice the height of the others. Drawn as three stacked rects. #}
+<svg class="flag" viewBox="0 0 60 40" width="21" height="14" aria-hidden="true" focusable="false" role="img">
+  <rect width="60" height="40" fill="#a51931"/>
+  <rect y="6.667" width="60" height="26.666" fill="#f4f5f8"/>
+  <rect y="13.333" width="60" height="13.334" fill="#2d2a4a"/>
+</svg>

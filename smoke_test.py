@@ -920,6 +920,122 @@ def main() -> int:
             break
     check("Sign-in rate limit trips", limited)
 
+    print("\nLanguage switching")
+    clear_limits()
+    visitor = app.test_client()
+
+    for path in [
+        "/th/",
+        "/th/about-epilepsy",
+        "/th/seizure-first-aid",
+        "/th/request-a-tag",
+        "/th/privacy",
+        "/th/sign-in",
+        "/th/create-account",
+        "/th/forgot-password",
+        "/th/forgot-password/sent",
+    ]:
+        check(f"GET {path} -> 200", visitor.get(path).status_code == 200)
+
+    print("\nThai signed-in pages")
+    clear_limits()
+    thai_user = app.test_client()
+    register(thai_user, "thaiuser", "thaiuser@example.com", GOOD_PASSWORD)
+
+    for path in ["/th/my-information", "/th/my-details", "/th/my-information/emergency", "/th/account"]:
+        check(f"GET {path} -> 200", thai_user.get(path).status_code == 200, f"got {thai_user.get(path).status_code}")
+
+    signed_in_thai = thai_user.get("/th/my-information").get_data(as_text=True)
+    check("Thai record page declares lang=th", 'lang="th"' in signed_in_thai)
+    check("Thai record page carries the tag form", 'id="request-a-tag"' in signed_in_thai)
+    check(
+        "Thai record page posts to the Thai endpoint",
+        '"/th/my-information/request-a-tag"' in signed_in_thai,
+    )
+    check(
+        "Thai record page links stay Thai",
+        '"/th/my-details"' in signed_in_thai and '"/th/my-information/emergency"' in signed_in_thai,
+    )
+
+    # Saving from a Thai page must come back to the Thai page, not English.
+    response = thai_user.post(
+        "/th/my-details",
+        data={"csrf_token": token_for(thai_user, "/th/my-details"), "full_name": "Somchai"},
+        follow_redirects=False,
+    )
+    check(
+        "Saving on a Thai page redirects back into Thai",
+        response.status_code == 302 and "/th/my-information" in response.headers.get("Location", ""),
+        response.headers.get("Location", "(none)"),
+    )
+
+    # Signing in from the Thai page must land on the Thai record page.
+    thai_returning = app.test_client()
+    response = thai_returning.post(
+        "/th/sign-in",
+        data={
+            "csrf_token": token_for(thai_returning, "/th/sign-in"),
+            "username": "thaiuser",
+            "password": GOOD_PASSWORD,
+        },
+        follow_redirects=False,
+    )
+    check(
+        "Signing in on a Thai page stays Thai",
+        response.status_code == 302 and "/th/" in response.headers.get("Location", ""),
+        response.headers.get("Location", "(none)"),
+    )
+
+    check(
+        "Thai 404 page renders",
+        thai_user.get("/th/no-such-page-here").status_code == 404,
+    )
+
+    # Untranslated by design -- these must not 404 under a /th/ prefix, they
+    # simply should not exist there.
+    check("Admin has no Thai twin", thai_user.get("/th/admin/tag-requests").status_code == 404)
+
+    print("\nLanguage switching (cont.)")
+
+    english = visitor.get("/about-epilepsy").get_data(as_text=True)
+    thai = visitor.get("/th/about-epilepsy").get_data(as_text=True)
+
+    check("English page declares lang=en", 'lang="en"' in english)
+    check("Thai page declares lang=th", 'lang="th"' in thai)
+
+    check("Picker is on the English page", "langpicker" in english)
+    check("Picker is on the Thai page", "langpicker" in thai)
+    check("Both flags are offered", 'lang="en"' in thai and 'lang="th"' in thai)
+
+    # The switcher has to land on the counterpart page, not just the home page.
+    check("English page links to its Thai counterpart", '"/th/about-epilepsy"' in english)
+    check("Thai page links back to its English counterpart", '"/about-epilepsy"' in thai)
+
+    # Auth pages are translated now, so the picker should offer the twin.
+    signin = visitor.get("/sign-in").get_data(as_text=True)
+    check("Sign-in page shows the picker", "langpicker" in signin)
+    check("Sign-in page links to its Thai twin", '"/th/sign-in"' in signin)
+
+    # The admin pages are deliberately English-only. The picker must still lead
+    # somewhere real rather than becoming a dead control.
+    admin_page = host.get("/admin/tag-requests").get_data(as_text=True)
+    check("Untranslated page still shows the picker", "langpicker" in admin_page)
+    check(
+        "Untranslated page falls back to the Thai home",
+        'href="/th/"' in admin_page,
+    )
+
+    check("Thai nav points at Thai routes", '"/th/seizure-first-aid"' in thai)
+    check("Thai footer points at Thai privacy", '"/th/privacy"' in thai)
+
+    check("Flags are inline SVG, not emoji", "<svg" in thai and "\U0001F1F9" not in thai)
+
+    # Nothing on this site may flash, translated pages included.
+    check(
+        "No animation introduced by the picker",
+        "@keyframes" not in visitor.get("/static/css/style.css").get_data(as_text=True),
+    )
+
     print("\nOpen redirect protection")
     from app.views.auth import _safe_next
 

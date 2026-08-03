@@ -1,0 +1,29 @@
+{% extends "th/base.html" %}
+{#
+  ============================================================================
+  THAI PAGE -- TRANSLATE THE TEXT, LEAVE THE MARKUP.
+  ============================================================================
+  A copy of errors/404.html with the wording still in English.
+
+  Replace the visible text only. Do not touch:
+    * url_for(...)      -- already resolves to the Thai route automatically
+    * name="..." / id   -- form fields the server reads by name
+    * class="..."       -- styling hooks
+    * {% ... %} logic   -- conditionals and loops
+  ============================================================================
+#}
+{% block title %}Page not found - Auraline{% endblock %}
+
+{% block content %}
+<section class="section">
+  <div class="wrap wrap--narrow">
+    <p class="eyebrow">404</p>
+    <h1>That page is not here.</h1>
+    <p class="lede">The link may be out of date, or the address may have a typo in it.</p>
+    <div class="btn-row mt-lg">
+      <a class="btn btn--primary" href="{{ url_for('main.index') }}">Back to the start</a>
+      <a class="btn btn--ghost" href="{{ url_for('main.first_aid') }}">Seizure first aid</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

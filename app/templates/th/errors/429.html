@@ -1,0 +1,29 @@
+{% extends "th/base.html" %}
+{#
+  ============================================================================
+  THAI PAGE -- TRANSLATE THE TEXT, LEAVE THE MARKUP.
+  ============================================================================
+  A copy of errors/429.html with the wording still in English.
+
+  Replace the visible text only. Do not touch:
+    * url_for(...)      -- already resolves to the Thai route automatically
+    * name="..." / id   -- form fields the server reads by name
+    * class="..."       -- styling hooks
+    * {% ... %} logic   -- conditionals and loops
+  ============================================================================
+#}
+{% block title %}Too many requests - Auraline{% endblock %}
+
+{% block content %}
+<section class="section">
+  <div class="wrap wrap--narrow">
+    <p class="eyebrow">429</p>
+    <h1>That was a few too many, too quickly.</h1>
+    <p class="lede">
+      We limit how often these forms can be submitted, to keep the site usable
+      for everyone. Please wait a few minutes and try again.
+    </p>
+    <p class="mt-lg"><a class="btn btn--primary" href="{{ url_for('main.index') }}">Back to the start</a></p>
+  </div>
+</section>
+{% endblock %}

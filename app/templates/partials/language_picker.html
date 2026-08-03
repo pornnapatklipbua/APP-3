@@ -1,0 +1,32 @@
+{# Native <details> rather than a scripted menu: it opens, closes and takes
+   keyboard focus with no JavaScript at all, which matters here because the
+   Content-Security-Policy forbids inline script. main.js only adds the
+   click-outside and Escape niceties on top. #}
+<details class="langpicker">
+  <summary title="Change language">
+    {% if current_language == 'th' %}
+      {% include "partials/flag-th.svg" %}
+    {% else %}
+      {% include "partials/flag-en.svg" %}
+    {% endif %}
+    <span class="langpicker__code">{{ current_language|upper }}</span>
+    <svg class="langpicker__chevron" width="10" height="10" viewBox="0 0 24 24" fill="none"
+         stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true" focusable="false">
+      <path d="M6 9l6 6 6-6"/>
+    </svg>
+    <span class="visually-hidden">Change language</span>
+  </summary>
+
+  <ul class="langpicker__menu">
+    {% for code, label, flag in languages %}
+      <li>
+        <a href="{{ url_for_language(code) }}"
+           lang="{{ code }}"
+           {% if code == current_language %}aria-current="true"{% endif %}>
+          {% include flag %}
+          <span>{{ label }}</span>
+        </a>
+      </li>
+    {% endfor %}
+  </ul>
+</details>

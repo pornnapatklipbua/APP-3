@@ -1,0 +1,109 @@
+{% extends "th/base.html" %}
+{#
+  ============================================================================
+  THAI PAGE -- TRANSLATE THE TEXT, LEAVE THE MARKUP.
+  ============================================================================
+  A copy of records/my_information.html with the wording still in English.
+
+  Replace the visible text only. Do not touch:
+    * url_for(...)      -- already resolves to the Thai route automatically
+    * name="..." / id   -- form fields the server reads by name
+    * class="..."       -- styling hooks
+    * {% ... %} logic   -- conditionals and loops
+  ============================================================================
+#}
+{% block title %}My epilepsy information - Auraline{% endblock %}
+
+{% block content %}
+<section class="section">
+  <div class="wrap wrap--narrow">
+
+    {% if profile is none or profile.is_empty() %}
+      <p class="eyebrow">My information</p>
+      <h1>Nothing written down yet.</h1>
+      <p class="lede">
+        This page will only ever show your own information. At the moment there
+        is nothing here to show.
+      </p>
+
+      <div class="empty-state mt-lg">
+        <h2>Start with whatever you know</h2>
+        <p>
+          Every field is optional and you can change any of it later. Even three
+          lines - your seizure type, your medication, and who to call - is worth
+          more than a blank page to whoever is standing over you.
+        </p>
+        <p class="mt-md">
+          <a class="btn btn--primary" href="{{ url_for('records.edit') }}">Write my information</a>
+        </p>
+        <p class="faint mt-md">
+          Once it is written, you can put it on an
+          <a href="{{ url_for('records.emergency') }}">NFC tag or QR card</a> that
+          shows it to whoever is helping you.
+        </p>
+      </div>
+
+    {% else %}
+      <div class="record-head">
+        <div>
+          <p class="eyebrow">My information</p>
+          <h1>{{ profile.full_name or current_user.username or 'My epilepsy record' }}</h1>
+          <p class="faint">
+            {{ profile.completed_count() }} of {{ profile.field_names()|length }} details filled in.
+            Last updated {{ profile.updated_at.strftime('%d %B %Y') }}.
+          </p>
+        </div>
+        <div class="btn-row no-print">
+          <a class="btn btn--ghost" href="{{ url_for('records.edit') }}">Edit</a>
+          <a class="btn btn--ghost" href="{{ url_for('records.emergency') }}">Emergency tag</a>
+          <a class="btn btn--quiet" href="{{ url_for('records.download') }}">Download</a>
+        </div>
+      </div>
+
+      {% for heading, blurb, fields in sections %}
+        {# Only render a section if the user actually filled something in it. #}
+        {% set section_has_value = namespace(found=false) %}
+        {% for name, label, kind, hint in fields %}
+          {% if profile[name] %}{% set section_has_value.found = true %}{% endif %}
+        {% endfor %}
+
+        {% if section_has_value.found %}
+          <div class="record-section">
+            <h2>{{ heading }}</h2>
+            <dl class="record-list">
+              {% for name, label, kind, hint in fields %}
+                {% if profile[name] %}
+                  <div>
+                    <dt>{{ label }}</dt>
+                    <dd>{{ profile[name] }}</dd>
+                  </div>
+                {% endif %}
+              {% endfor %}
+            </dl>
+          </div>
+        {% endif %}
+      {% endfor %}
+
+      <div class="note no-print">
+        This page is visible to you alone. Nobody else can open it, not even with
+        the link - it is tied to your signed-in account. To let a responder read
+        it when you cannot sign in for them, set up an
+        <a href="{{ url_for('records.emergency') }}">emergency tag</a>.
+      </div>
+
+      <div class="form-actions no-print">
+        <a class="btn btn--ghost" href="{{ url_for('records.edit') }}">Edit my information</a>
+        <a class="btn btn--quiet" href="{{ url_for('records.download') }}">Download a copy</a>
+        <form method="post" action="{{ url_for('records.delete') }}" class="spacer"
+              data-confirm="Permanently delete everything you have stored? This cannot be undone.">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn btn--danger">Delete everything</button>
+        </form>
+      </div>
+    {% endif %}
+
+    {% include "th/records/_request_tag_form.html" %}
+
+  </div>
+</section>
+{% endblock %}

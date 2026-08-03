@@ -23,6 +23,7 @@ from flask import (
 )
 
 from ..extensions import db
+from ..i18n import bilingual, lurl_for, render_localised
 from ..models import EmergencyCard, EpilepsyProfile, TagRequest
 from ..security import login_required
 
@@ -39,7 +40,7 @@ def _own_card() -> EmergencyCard | None:
     return db.session.scalar(db.select(EmergencyCard).filter_by(user_id=g.user.id))
 
 
-@bp.route("/my-information")
+@bilingual(bp, "/my-information")
 @login_required
 def my_information():
     """Read-only view of this user's own epilepsy information, plus the tag
@@ -54,7 +55,7 @@ def my_information():
         .limit(5)
     ).all()
 
-    return render_template(
+    return render_localised(
         "records/my_information.html",
         profile=profile,
         sections=EpilepsyProfile.SECTIONS,
@@ -63,7 +64,7 @@ def my_information():
     )
 
 
-@bp.route("/my-details", methods=["GET", "POST"])
+@bilingual(bp, "/my-details", methods=["GET", "POST"])
 @login_required
 def edit():
     profile = _own_profile()
@@ -79,9 +80,9 @@ def edit():
 
         db.session.commit()
         flash("Your information has been saved.", "success")
-        return redirect(url_for("records.my_information"))
+        return redirect(lurl_for("records.my_information"))
 
-    return render_template(
+    return render_localised(
         "records/edit.html",
         profile=profile,
         sections=EpilepsyProfile.SECTIONS,
@@ -113,14 +114,14 @@ def download():
     )
 
 
-@bp.route("/my-information/emergency")
+@bilingual(bp, "/my-information/emergency")
 @login_required
 def emergency():
     """Manage the tag: the URL to write to it, whether it is live, and who has
     opened it."""
     card = _own_card()
     profile = _own_profile()
-    return render_template(
+    return render_localised(
         "records/emergency.html",
         card=card,
         card_url=url_for("emergency.card", token=card.token, _external=True) if card else None,
@@ -129,7 +130,7 @@ def emergency():
     )
 
 
-@bp.route("/my-information/emergency/create", methods=["POST"])
+@bilingual(bp, "/my-information/emergency/create", methods=["POST"])
 @login_required
 def emergency_create():
     card, created = EmergencyCard.get_or_create(g.user.id)
@@ -138,15 +139,15 @@ def emergency_create():
         flash("Your emergency link is ready to write to a tag.", "success")
     else:
         flash("You already have an emergency tag link.", "info")
-    return redirect(url_for("records.emergency"))
+    return redirect(lurl_for("records.emergency"))
 
 
-@bp.route("/my-information/emergency/regenerate", methods=["POST"])
+@bilingual(bp, "/my-information/emergency/regenerate", methods=["POST"])
 @login_required
 def emergency_regenerate():
     card = _own_card()
     if card is None:
-        return redirect(url_for("records.emergency"))
+        return redirect(lurl_for("records.emergency"))
 
     card.regenerate()
     db.session.commit()
@@ -155,15 +156,15 @@ def emergency_regenerate():
         "or card you have already made must be written again.",
         "success",
     )
-    return redirect(url_for("records.emergency"))
+    return redirect(lurl_for("records.emergency"))
 
 
-@bp.route("/my-information/emergency/toggle", methods=["POST"])
+@bilingual(bp, "/my-information/emergency/toggle", methods=["POST"])
 @login_required
 def emergency_toggle():
     card = _own_card()
     if card is None:
-        return redirect(url_for("records.emergency"))
+        return redirect(lurl_for("records.emergency"))
 
     card.is_active = not card.is_active
     db.session.commit()
@@ -172,7 +173,7 @@ def emergency_toggle():
         else "Your tag is switched off. Scanning it now shows nothing.",
         "success",
     )
-    return redirect(url_for("records.emergency"))
+    return redirect(lurl_for("records.emergency"))
 
 
 @bp.route("/my-information/emergency/qr.svg")
@@ -201,7 +202,7 @@ def emergency_qr():
     )
 
 
-@bp.route("/my-details/delete", methods=["POST"])
+@bilingual(bp, "/my-details/delete", methods=["POST"])
 @login_required
 def delete():
     profile = _own_profile()
@@ -211,4 +212,4 @@ def delete():
         db.session.delete(profile)
         db.session.commit()
         flash("Your epilepsy information has been permanently deleted.", "success")
-    return redirect(url_for("records.my_information"))
+    return redirect(lurl_for("records.my_information"))

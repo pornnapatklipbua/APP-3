@@ -253,6 +253,99 @@ hr {
 }
 .linkbutton:hover { color: var(--ink); background: var(--paper-sunken); }
 
+/* --- Language picker ----------------------------------------------------- */
+/* A native <details> element, so it opens and closes without any script and
+   stays inside the strict CSP. No animation -- it simply appears. */
+
+.langpicker { position: relative; }
+
+.langpicker > summary {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.55rem;
+  border: 1px solid var(--rule-strong);
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+  list-style: none;
+  user-select: none;
+}
+
+/* Suppress the default disclosure triangle in every engine. */
+.langpicker > summary::-webkit-details-marker { display: none; }
+.langpicker > summary::marker { content: ""; }
+
+.langpicker > summary:hover { color: var(--ink); background: var(--paper-sunken); }
+
+.langpicker[open] > summary {
+  color: var(--ink);
+  border-color: var(--violet);
+  background: var(--paper-sunken);
+}
+
+.langpicker__code { letter-spacing: 0.04em; }
+
+.langpicker__chevron { color: var(--ink-faint); flex: none; }
+.langpicker[open] .langpicker__chevron { transform: rotate(180deg); }
+
+.langpicker__menu {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  right: 0;
+  z-index: 50;
+  min-width: 11rem;
+  margin: 0;
+  padding: 0.3rem;
+  list-style: none;
+  background: var(--paper-raised);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.langpicker__menu a {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.6rem;
+  border-radius: 7px;
+  font-size: 0.94rem;
+  font-weight: 500;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.langpicker__menu a:hover { background: var(--paper-sunken); }
+
+.langpicker__menu a[aria-current="true"] {
+  color: var(--violet);
+  font-weight: 600;
+  background: var(--violet-tint);
+}
+
+/* Flags carry meaning here, so they keep a hairline edge against pale
+   backgrounds -- the white band of either flag would otherwise bleed out. */
+.flag {
+  flex: none;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px rgba(28, 25, 34, 0.18);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* --- Buttons ------------------------------------------------------------ */
 
 .btn {

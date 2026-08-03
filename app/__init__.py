@@ -40,6 +40,13 @@ def create_app(config_object: type[Config] = Config) -> Flask:
 
     app.jinja_env.filters["phones"] = linkify_phones
 
+    # Templates link within whichever language they are being served in, so a
+    # Thai page never drops the visitor back into English mid-journey. Safe to
+    # apply globally: endpoints with no Thai twin fall through unchanged.
+    from .i18n import lurl_for
+
+    app.jinja_env.globals["url_for"] = lurl_for
+
     @app.before_request
     def load_logged_in_user() -> None:
         from .models import User
@@ -57,22 +64,26 @@ def create_app(config_object: type[Config] = Config) -> Flask:
 
     @app.context_processor
     def inject_globals() -> dict:
-        return {"current_user": g.get("user")}
+        from .i18n import language_context
+
+        return {"current_user": g.get("user"), **language_context()}
 
     app.after_request(apply_security_headers)
 
+    from .i18n import render_localised
+
     @app.errorhandler(404)
     def not_found(_):
-        return render_template("errors/404.html"), 404
+        return render_localised("errors/404.html"), 404
 
     @app.errorhandler(429)
     def too_many(_):
-        return render_template("errors/429.html"), 429
+        return render_localised("errors/429.html"), 429
 
     @app.errorhandler(500)
     def server_error(_):
         db.session.rollback()
-        return render_template("errors/500.html"), 500
+        return render_localised("errors/500.html"), 500
 
     with app.app_context():
         try:
