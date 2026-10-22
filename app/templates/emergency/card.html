@@ -1,10 +1,13 @@
+
+
 <!doctype html>
-<html lang="en">
+<html lang="th">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Emergency information{% if profile and profile.full_name %} - {{ profile.full_name }}{% endif %}</title>
-  {# Belt and braces alongside the X-Robots-Tag header and robots.txt. #}
+  <title>ข้อมูลฉุกเฉิน (Emergency information){% if profile and profile.full_name %} - {{ profile.full_name }}{% endif %}</title>
+
+  {# Keep the existing privacy and security protections. #}
   <meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
   <meta name="referrer" content="no-referrer">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
@@ -14,14 +17,18 @@
 
 <main class="ec">
   <header class="ec__head">
-    <p class="ec__flag">Epilepsy &mdash; emergency information</p>
+    <p class="ec__flag">โรคลมชัก — ข้อมูลฉุกเฉิน (Epilepsy — emergency information)</p>
+
     {% if profile and profile.full_name %}
       <h1>{{ profile.full_name }}</h1>
     {% else %}
-      <h1>This person has epilepsy</h1>
+      <h1>บุคคลนี้เป็นโรคลมชัก (This person has epilepsy)</h1>
     {% endif %}
+
     {% if profile and profile.date_of_birth %}
-      <p class="ec__dob">Date of birth: {{ profile.date_of_birth }}</p>
+      <p class="ec__dob">
+        วันเดือนปีเกิด (Date of birth): {{ profile.date_of_birth }}
+      </p>
     {% endif %}
   </header>
 
@@ -29,11 +36,20 @@
     <div class="ec__section">
       <div class="ec__row">
         <p class="ec__value">
-          This person has registered an emergency tag but has not written down
-          their information yet. Treat as you would anyone having a seizure:
-          time it, protect their head, do not restrain them, and turn them onto
-          their side once the movements stop. Call an ambulance if the seizure
-          passes five minutes or a second one follows.
+          บุคคลนี้ลงทะเบียนแท็กฉุกเฉินแล้ว แต่ยังไม่ได้กรอกข้อมูล
+          (This person has registered an emergency tag but has not entered their information yet.)
+
+          หากมีอาการชัก ให้จับเวลาและช่วยป้องกันศีรษะจากการกระแทก
+          อย่าจับยึดหรือกดร่างกายไว้ และเมื่อการกระตุกหยุดลง
+          ให้จัดให้นอนตะแคงหากทำได้อย่างปลอดภัย
+          (If this person has a seizure, time it, protect their head from injury,
+          do not restrain them, and turn them onto their side once the movements
+          stop if it is safe to do so.)
+
+          โทรเรียกรถพยาบาลหากอาการชักนานเกิน 5 นาที
+          หรือเกิดอาการชักซ้ำอีกครั้ง
+          (Call an ambulance if the seizure lasts longer than 5 minutes
+          or another seizure follows.)
         </p>
       </div>
     </div>
@@ -41,6 +57,7 @@
     {% for heading, rows in sections %}
       <section class="ec__section {% if loop.first %}ec__section--urgent{% endif %}">
         <h2>{{ heading }}</h2>
+
         {% for label, value in rows %}
           <div class="ec__row">
             <p class="ec__label">{{ label }}</p>
@@ -53,12 +70,22 @@
 
   <footer class="ec__foot">
     <p>
-      Shown because this person's tag was scanned. They wrote this themselves;
-      it is not a clinical record and may be out of date.
+      หน้านี้แสดงขึ้นเนื่องจากมีการสแกนแท็กของบุคคลนี้
+      ข้อมูลนี้เขียนโดยเจ้าของแท็ก ไม่ใช่เวชระเบียน
+      และข้อมูลอาจไม่เป็นปัจจุบัน
+      (This page is shown because this person's tag was scanned.
+      The information was provided by the tag owner; it is not a clinical
+      record and may be out of date.)
     </p>
-    <p class="ec__emergency">In an emergency, call your local emergency number.</p>
+
+    <p class="ec__emergency">
+      หากเกิดเหตุฉุกเฉิน โทรหมายเลขฉุกเฉินในพื้นที่ของคุณ
+      (In an emergency, call your local emergency number.)
+    </p>
   </footer>
 </main>
 
 </body>
 </html>
+
+

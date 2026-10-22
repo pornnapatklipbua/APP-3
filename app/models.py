@@ -189,130 +189,40 @@ class EpilepsyProfile(db.Model):
 
     # Field order here drives both the editor and the read-only card, so the two
     # pages can never drift apart.
-    SECTIONS: tuple[tuple[str, str, tuple[tuple[str, str, str, str], ...]], ...] = (
-        (
-            "About me",
-            "Who this record belongs to.",
-            (
-                ("full_name", "Full name", "text", "The name you want responders to use."),
-                ("date_of_birth", "Date of birth", "text", "e.g. 14 March 1996"),
-                ("blood_type", "Blood type", "text", "Only if you know it."),
-            ),
-        ),
-        (
-            "My seizures",
-            "What happens, and what it looks like from the outside.",
-            (
-                ("diagnosis", "Diagnosis", "text", "e.g. Focal epilepsy, temporal lobe"),
-                ("seizure_types", "Seizure types", "text", "e.g. Focal aware, tonic-clonic"),
-                (
-                    "seizure_description",
-                    "What a seizure looks like",
-                    "textarea",
-                    "Describe it the way you would to someone who has never seen one.",
-                ),
-                ("typical_duration", "Typical duration", "text", "e.g. 1-2 minutes"),
-                ("frequency", "How often", "text", "e.g. Two or three a month"),
-                (
-                    "warning_signs",
-                    "Warning signs or aura",
-                    "textarea",
-                    "Anything you notice beforehand.",
-                ),
-                ("triggers", "Known triggers", "textarea", "e.g. Missed sleep, illness, stress"),
-                (
-                    "recovery_notes",
-                    "Afterwards",
-                    "textarea",
-                    "How long recovery takes and what helps.",
-                ),
-            ),
-        ),
-        (
-            "If you are helping me",
-            "Instructions for whoever is with you when it happens.",
-            (
-                ("first_aid_notes", "Please do this", "textarea", "e.g. Time it. Cushion my head."),
-                ("do_not_do", "Please do not do this", "textarea", "e.g. Do not restrain me."),
-                (
-                    "call_ambulance_if",
-                    "Call an ambulance if",
-                    "textarea",
-                    "e.g. The seizure passes five minutes, or a second one follows.",
-                ),
-            ),
-        ),
-        (
-            "Treatment",
-            "Medication and anything implanted.",
-            (
-                ("medications", "Daily medication", "textarea", "Name, dose and timing."),
-                (
-                    "rescue_medication",
-                    "Rescue medication",
-                    "textarea",
-                    "What it is, where it is kept, and when to give it.",
-                ),
-                ("allergies", "Allergies", "textarea", "Medication and other allergies."),
-                (
-                    "implanted_device",
-                    "Implanted device",
-                    "text",
-                    "e.g. VNS fitted 2022 - magnet in my bag",
-                ),
-                ("other_conditions", "Other conditions", "textarea", ""),
-            ),
-        ),
-        (
-            "Who to contact",
-            "The people who should hear about it.",
-            (
-                (
-                    "emergency_contact_1",
-                    "Emergency contact",
-                    "textarea",
-                    "Name, relationship and phone number.",
-                ),
-                ("emergency_contact_2", "Second contact", "textarea", ""),
-                ("clinician", "Neurologist or GP", "textarea", "Name, clinic and phone number."),
-            ),
-        ),
-    )
-
-    # The emergency card reorders the same fields for someone who has thirty
-    # seconds and a person on the floor in front of them. An implanted VNS
-    # device and a drug allergy change what a responder does *first*, so they
-    # lead; the person's history matters, but it can wait three lines.
     EMERGENCY_LAYOUT: tuple[tuple[str, tuple[str, ...]], ...] = (
+    (
+        "สิ่งที่ผู้ช่วยควรทำระหว่างคุณชัก (What to do during a seizure)",
+        ("first_aid_notes", "rescue_medication"),
+    ),
+    (
+        "สิ่งที่ผู้ช่วยไม่ควรทำระหว่างชัก (What not to do during a seizure)",
+        ("do_not_do",),
+    ),
+    (
+        "หากคุณชักเกิน 5 นาทีผู้ช่วยควรโทรหาเบอร์ชุกเชินได (Who to call for emergency help)",
+        ("call_ambulance_if", "emergency_number"),
+    ),
+    (
+        "ข้อมูลที่ผู้ช่วยควรบอกบุคลากรทางการแพทย์เกี่ยวกับคุณ(Information for medical personnel)",
         (
-            "Read this first",
-            ("implanted_device", "allergies", "rescue_medication"),
+            "seizure_types",
+            "typical_duration",
+            "seizure_description",
+            "warning_signs",
+            "triggers",
+            "frequency",
+            "medications",
+            "implanted_device",
+            "allergies",
+            "other_conditions/comorbidities",
         ),
-        (
-            "If they are having a seizure now",
-            ("first_aid_notes", "do_not_do", "call_ambulance_if"),
-        ),
-        (
-            "What their seizures look like",
-            (
-                "seizure_types",
-                "seizure_description",
-                "typical_duration",
-                "warning_signs",
-                "recovery_notes",
-                "triggers",
-                "frequency",
-            ),
-        ),
-        (
-            "Medical background",
-            ("diagnosis", "medications", "other_conditions", "blood_type"),
-        ),
-        (
-            "Who to contact",
-            ("emergency_contact_1", "emergency_contact_2", "clinician"),
-        ),
-    )
+    ),
+    (
+        "สิ่งที่ผู้ช่วยควรทำหลังคุณหยุดชัก (What to do after a seizure)",
+        ("recovery_notes",),
+    ),
+   
+)
 
     # Shown in the card header rather than as a labelled row.
     EMERGENCY_HEADER_FIELDS: tuple[str, ...] = ("full_name", "date_of_birth")
